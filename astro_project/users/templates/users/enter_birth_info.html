@@ -1,0 +1,10 @@
+{% extends "base.html" %}
+
+{% block content %}
+  <h2>輸入你的出生資訊</h2>
+  <form method="post">
+    {% csrf_token %}
+    {{ form.as_p }}
+    <button type="submit">送出</button>
+  </form>
+{% endblock %}

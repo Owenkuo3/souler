@@ -12,6 +12,8 @@ def register(request):
         form = RegistrationForm(request.POST)
         if form.is_valid():
             user = form.save()
+            UserProfile.objects.create(user=user, nickname=user.username)
+            
             login(request, user)
             return redirect('registration_success')
     else:
