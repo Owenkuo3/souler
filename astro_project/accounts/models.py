@@ -1,23 +1,17 @@
 from django.db import models
+from django.contrib.auth.models import User
 
-# Create your models here.
 class UserProfile(models.Model):
-    GENDER_CHOICES = [
-        ('M', 'Male'),
-        ('F', 'Female'),
-        ('O', 'Others'),
-    ]
-
-    nickname = models.CharField(max_length=30)
-    gender = models.CharField(max_length=1, choices=GENDER_CHOICES)
-    zodiac_sign = models.CharField(max_length=20)
-
-    bithday = models.DateField(null=False, blank=False)
-    birth_time = models.TimeField(null=False, blank=False)
-    birth_location = models.CharField(max_length=100)
-
+    user = models.OneToOneField(User, on_delete=models.CASCADE)
+    nickname = models.CharField(max_length=30, unique=True)
+    gender = models.CharField(
+        max_length=1,
+        choices=[('M', 'Male'), ('F', 'Female'), ('O', 'Others')],
+        blank=True,
+        null=True
+    )
+    photo = models.ImageField(upload_to='user_photos/', blank=True, null=True)
     bio = models.TextField(blank=True)
-
 
     def __str__(self):
         return self.nickname
