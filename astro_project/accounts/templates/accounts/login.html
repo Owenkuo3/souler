@@ -1,0 +1,17 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>登入</title>
+</head>
+<body>
+    <h1>登入</h1>
+    <form method="post">
+        {% csrf_token %}
+        {{ form.as_p }}
+        <button type="submit">登入</button>
+        <p>還沒有帳號？<a href="{% url 'register' %}">註冊</a></p>
+    </form>
+</body>
+</html>
