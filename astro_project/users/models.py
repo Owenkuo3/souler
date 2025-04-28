@@ -2,6 +2,7 @@ from django.db import models
 from accounts.models import UserProfile
 from .utils import calculate_sun_sign
 
+
 class City(models.Model):
     name = models.CharField(max_length=100)
     latitude = models.DecimalField(max_digits=9, decimal_places=6)
@@ -19,7 +20,7 @@ class UserBirthInfo(models.Model):
     birth_minute = models.IntegerField()
     birth_latitude = models.DecimalField(max_digits=9, decimal_places=6, blank=True, null=True)
     birth_longitude = models.DecimalField(max_digits=9, decimal_places=6, blank=True, null=True)
-    birth_city = models.ForeignKey(City, blank=True, null=True, on_delete=models.SET_NULL)
+    birth_location = models.CharField(max_length=100, blank=True, null=True) # 可選的文字地點
 
     zodiac_sign = models.CharField(max_length=20, blank=True, null=True) # 星座，可以在後續計算或填寫
 
@@ -28,10 +29,12 @@ class UserBirthInfo(models.Model):
     
 
     def save(self, *args, **kwargs):
+        # 如果有選城市，帶入經緯度
         if self.birth_city:
             self.birth_latitude = self.birth_city.latitude
             self.birth_longitude = self.birth_city.longitude
-            
+
+        # 計算星座（這裡先簡單邏輯，經緯度先用 0）
         if self.birth_year and self.birth_month and self.birth_day and self.birth_hour is not None:
             self.zodiac_sign = calculate_sun_sign(
                 self.birth_year,
@@ -41,8 +44,7 @@ class UserBirthInfo(models.Model):
                 self.birth_minute or 0,
                 0,
                 0,
-
             )
+
         super().save(*args, **kwargs)
-
-
+        
