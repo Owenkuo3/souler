@@ -1,6 +1,6 @@
 from django.db import models
 from accounts.models import UserProfile
-from .utils import calculate_sun_sign, city_name_mapping, get_lat_lng_by_city, calculate_moon_sign
+from .utils import calculate_full_chart, city_name_mapping, get_lat_lng_by_city
 
 
 class City(models.Model):
@@ -22,8 +22,17 @@ class UserBirthInfo(models.Model):
     birth_longitude = models.DecimalField(max_digits=9, decimal_places=6, blank=True, null=True)
     birth_location = models.CharField(max_length=100, blank=True, null=True) # 可選的文字地點
 
-    zodiac_sign = models.CharField(max_length=20, blank=True, null=True) # 星座，可以在後續計算或填寫
-    moon_sign = models.CharField(max_length=20, blank=True, null=True)    # 月亮星座（新增）
+    # 星座欄位
+    sun_sign = models.CharField(max_length=20, blank=True, null=True)
+    moon_sign = models.CharField(max_length=20, blank=True, null=True)
+    mercury_sign = models.CharField(max_length=20, blank=True, null=True)
+    venus_sign = models.CharField(max_length=20, blank=True, null=True)
+    mars_sign = models.CharField(max_length=20, blank=True, null=True)
+    jupiter_sign = models.CharField(max_length=20, blank=True, null=True)
+    saturn_sign = models.CharField(max_length=20, blank=True, null=True)
+    uranus_sign = models.CharField(max_length=20, blank=True, null=True)
+    neptune_sign = models.CharField(max_length=20, blank=True, null=True)
+    pluto_sign = models.CharField(max_length=20, blank=True, null=True)
 
     def __str__(self):
         return f"{self.user_profile.nickname} 的出生資訊"
@@ -44,6 +53,9 @@ class UserBirthInfo(models.Model):
         print(f"===> 檢查經緯度: {self.birth_latitude}, {self.birth_longitude}")
 
         try:
+            if self.sun_sign is not None:
+                return
+            
             if all(value is not None for value in [
                 self.birth_year,
                 self.birth_month,
@@ -53,26 +65,28 @@ class UserBirthInfo(models.Model):
                 self.birth_latitude,
                 self.birth_longitude,
             ]):
-                self.zodiac_sign = calculate_sun_sign(
+            
+                chart = calculate_full_chart(
                     self.birth_year,
                     self.birth_month,
                     self.birth_day,
                     self.birth_hour,
                     self.birth_minute,
                     float(self.birth_latitude),
-                    float(self.birth_longitude)
+                    float(self.birth_longitude),
                 )
-                self.moon_sign = calculate_moon_sign(
-                    self.birth_year,
-                    self.birth_month,
-                    self.birth_day,
-                    self.birth_hour,
-                    self.birth_minute,
-                    float(self.birth_latitude),
-                    float(self.birth_longitude)
-                )
-            print("===> 實際星座計算結果:", self.zodiac_sign, "/", self.moon_sign)
 
+                self.sun_sign = chart["太陽"]["星座"]
+                self.moon_sign = chart["月亮"]["星座"]
+                self.mercury_sign = chart["水星"]["星座"]
+                self.venus_sign = chart["金星"]["星座"]
+                self.mars_sign = chart["火星"]["星座"]
+                self.jupiter_sign = chart["木星"]["星座"]
+                self.saturn_sign = chart["土星"]["星座"]
+                self.uranus_sign = chart["天王星"]["星座"]
+                self.neptune_sign = chart["海王星"]["星座"]
+                self.pluto_sign = chart["冥王星"]["星座"]
+                
         except Exception as e:
             print("星座計算失敗:", e)
             self.zodiac_sign = None

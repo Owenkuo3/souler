@@ -1,31 +1,38 @@
 import swisseph as swe
 import datetime
 
-def calculate_sun_sign(year, month, day, hour, minute, latitude, longitude):
-    swe.set_ephe_path('.')  # 指定 Swiss Ephemeris 路徑
-    jd = swe.julday(year, month, day, hour + minute / 60)
-    
-    # 取得太陽黃道度數（注意取第0個元素）
-    planet_pos, _ = swe.calc_ut(jd, swe.SUN)
-    degree = planet_pos[0]
 
-    # 根據太陽度數回傳星座
-    signs = ["牡羊", "金牛", "雙子", "巨蟹", "獅子", "處女",
-             "天秤", "天蠍", "射手", "魔羯", "水瓶", "雙魚"]
-    sign_index = int(degree / 30)
-    return signs[sign_index]
-
-
-def calculate_moon_sign(year, month, day, hour, minute, latitude, longitude):
+def calculate_full_chart(year, month, day, hour, minute, latitude, longitude):
     swe.set_ephe_path('.')
     jd = swe.julday(year, month, day, hour + minute / 60)
-    planet_pos, _ = swe.calc_ut(jd, swe.SUN)
-    degree = planet_pos[0]
     
-    signs = ["牡羊", "金牛", "雙子", "巨蟹", "獅子", "處女",
-             "天秤", "天蠍", "射手", "魔羯", "水瓶", "雙魚"]
-    sign_index = int(planet_pos / 30)
-    return signs[sign_index]
+    planet_names = {
+        swe.SUN: "太陽",
+        swe.MOON: "月亮",
+        swe.MERCURY: "水星",
+        swe.VENUS: "金星",
+        swe.MARS: "火星",
+        swe.JUPITER: "木星",
+        swe.SATURN: "土星",
+        swe.URANUS: "天王星",
+        swe.NEPTUNE: "海王星",
+        swe.PLUTO: "冥王星",
+    }
+
+    result = {}
+    for planet_id, name in planet_names.items():
+        planet_pos, _ = swe.calc_ut(jd, planet_id)
+        degree = planet_pos[0]
+        zodiac_sign = int(degree / 30)
+        signs = ["牡羊", "金牛", "雙子", "巨蟹", "獅子", "處女",
+                 "天秤", "天蠍", "射手", "魔羯", "水瓶", "雙魚"]
+        result[name] = {
+            "度數": round(degree, 4),
+            "星座": signs[zodiac_sign],
+        }
+
+    return result
+
 
 
 def get_lat_lng_by_city(city_name):
