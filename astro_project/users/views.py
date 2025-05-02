@@ -8,8 +8,10 @@ from accounts.models import UserProfile
 
 @login_required
 def enter_birth_info(request):
-    user_profile = request.user.profile  # 假設你有用 OneToOne 連接 UserProfile
-
+    try:
+        user_profile = request.user.profile
+    except UserProfile.DoesNotExist:
+        return HttpResponse("尚未建立個人檔案，請聯絡管理員")
     try:
         birth_info = user_profile.birth_info
         form = UserBirthInfoForm(instance=birth_info)
@@ -25,19 +27,3 @@ def enter_birth_info(request):
             return redirect('profile') 
 
     return render(request, 'users/enter_birth_info.html', {'form': form})
-
-def test_birth_info(request):
-    user_profile = UserProfile.objects.get(id=5)
-
-    # 刪掉舊資料（開發測試方便用，正式環境別這樣）
-    UserBirthInfo.objects.filter(user_profile=user_profile).delete()
-
-    info = UserBirthInfo(
-        user_profile=user_profile,
-        birth_year=1990, birth_month=1, birth_day=1,
-        birth_hour=12, birth_minute=0,
-        birth_location='台北'
-    )
-    info.save()
-
-    return HttpResponse(f"{info.zodiac_sign} / {info.moon_sign}")

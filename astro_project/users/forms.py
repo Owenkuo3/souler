@@ -1,7 +1,12 @@
 from django import forms
 from .models import UserBirthInfo
+from .utils import city_name_mapping
 
 class UserBirthInfoForm(forms.ModelForm):
+    birth_location = forms.ChoiceField(
+        choices=[(k, k) for k in city_name_mapping.keys()],
+        label="出生地點"
+    )
     class Meta:
         model = UserBirthInfo
         fields = [
@@ -15,6 +20,5 @@ class UserBirthInfoForm(forms.ModelForm):
             'birth_day': forms.NumberInput(attrs={'min': 1, 'max': 31}),
             'birth_hour': forms.NumberInput(attrs={'min': 0, 'max': 23}),
             'birth_minute': forms.NumberInput(attrs={'min': 0, 'max': 59}),
-            'birth_location': forms.TextInput(attrs={'placeholder': '例如：台北市'}),
         }
 

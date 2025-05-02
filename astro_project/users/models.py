@@ -33,12 +33,16 @@ class UserBirthInfo(models.Model):
     uranus_sign = models.CharField(max_length=20, blank=True, null=True)
     neptune_sign = models.CharField(max_length=20, blank=True, null=True)
     pluto_sign = models.CharField(max_length=20, blank=True, null=True)
+    ascendant_sign = models.CharField(max_length=10, null=True, blank=True)
+    descendant_sign = models.CharField(max_length=10, null=True, blank=True)
+    mc_sign = models.CharField(max_length=10, null=True, blank=True)  # 天頂
+    ic_sign = models.CharField(max_length=10, null=True, blank=True)  # 天底
 
     def __str__(self):
         return f"{self.user_profile.nickname} 的出生資訊"
     
 
-    def save(self, *args, **kwargs):
+    def calculate_zodiac_signs_if_needed(self):
         if self.birth_location:
             # 先把中文城市轉成英文城市
             english_city = city_name_mapping.get(self.birth_location, self.birth_location)
@@ -53,7 +57,10 @@ class UserBirthInfo(models.Model):
         print(f"===> 檢查經緯度: {self.birth_latitude}, {self.birth_longitude}")
 
         try:
-            if self.sun_sign is not None:
+            if all([
+                self.sun_sign, self.moon_sign, self.ascendant_sign,
+                self.mc_sign, self.ic_sign
+            ]):
                 return
             
             if all(value is not None for value in [
@@ -86,9 +93,14 @@ class UserBirthInfo(models.Model):
                 self.uranus_sign = chart["天王星"]["星座"]
                 self.neptune_sign = chart["海王星"]["星座"]
                 self.pluto_sign = chart["冥王星"]["星座"]
+                self.ascendant_sign = chart["上升"]["星座"]
+                self.descendant_sign = chart["下降"]["星座"]
+                self.mc_sign = chart["天頂"]["星座"]
+                self.ic_sign = chart["天底"]["星座"]
                 
         except Exception as e:
             print("星座計算失敗:", e)
-            self.zodiac_sign = None
 
+    def save(self, *args, **kwargs):
+        self.calculate_zodiac_signs_if_needed()
         super().save(*args, **kwargs)

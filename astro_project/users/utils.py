@@ -30,6 +30,32 @@ def calculate_full_chart(year, month, day, hour, minute, latitude, longitude):
             "度數": round(degree, 4),
             "星座": signs[zodiac_sign],
         }
+    cusps, ascmc = swe.houses(jd, latitude, longitude, b'P')
+    asc = ascmc[0]  # 上升
+    mc = ascmc[1]   # 天頂
+    dsc = (asc + 180) % 360  # 下降
+    ic = (mc + 180) % 360    # 天底
+
+    # 加入星座判斷邏輯
+    signs = ["牡羊", "金牛", "雙子", "巨蟹", "獅子", "處女",
+            "天秤", "天蠍", "射手", "魔羯", "水瓶", "雙魚"]
+
+    result["上升"] = {
+        "度數": round(asc, 4),
+        "星座": signs[int(asc / 30)]
+    }
+    result["下降"] = {
+        "度數": round(dsc, 4),
+        "星座": signs[int(dsc / 30)]
+    }
+    result["天頂"] = {
+        "度數": round(mc, 4),
+        "星座": signs[int(mc / 30)]
+    }
+    result["天底"] = {
+        "度數": round(ic, 4),
+        "星座": signs[int(ic / 30)]
+    }
 
     return result
 
@@ -43,7 +69,6 @@ city_name_mapping = {
     "台北": "Taipei",
     "高雄": "Kaohsiung",
     "台中": "Taichung",
-
     "澎湖": "Penghu",
     "金門": "Kinmen",
     "馬祖": "Matsu",
@@ -75,7 +100,6 @@ city_coordinates = {
     "Taipei": (25.0330, 121.5654),  # 台北
     "Kaohsiung": (22.6273, 120.3014),  # 高雄
     "Taichung": (24.1477, 120.6736),  # 台中
-
     "Penghu": (23.5666, 119.5745),  # 澎湖
     "Kinmen": (24.4360, 118.3172),  # 金門
     "Matsu": (26.1540, 119.9505),  # 馬祖
