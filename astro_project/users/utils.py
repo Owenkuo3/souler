@@ -1,16 +1,21 @@
 import swisseph as swe
-import datetime
+from datetime import datetime, timedelta
+
 
 
 def calculate_full_chart(year, month, day, hour, minute, latitude, longitude):
     swe.set_ephe_path('.')
-    jd = swe.julday(year, month, day, hour + minute / 60)
     
+    local_dt = datetime(year, month, day, hour, minute)
+    utc_dt = local_dt - timedelta(hours=8)
+    
+    utc_hour_float = utc_dt.hour + utc_dt.minute / 60 + utc_dt.second / 3600
+    jd = swe.julday(utc_dt.year, utc_dt.month, utc_dt.day, utc_hour_float)
     planet_names = {
         swe.SUN: "太陽",
         swe.MOON: "月亮",
         swe.MERCURY: "水星",
-        swe.VENUS: "金星",
+        swe.VENUS: "金星",      
         swe.MARS: "火星",
         swe.JUPITER: "木星",
         swe.SATURN: "土星",
@@ -20,7 +25,7 @@ def calculate_full_chart(year, month, day, hour, minute, latitude, longitude):
     }
 
     result = {}
-    for planet_id, name in planet_names.items():
+    for planet_id, name in planet_names.items():    
         planet_pos, _ = swe.calc_ut(jd, planet_id)
         degree = planet_pos[0]
         zodiac_sign = int(degree / 30)
@@ -35,8 +40,6 @@ def calculate_full_chart(year, month, day, hour, minute, latitude, longitude):
     mc = ascmc[1]   # 天頂
     dsc = (asc + 180) % 360  # 下降
     ic = (mc + 180) % 360    # 天底
-
-    # 加入星座判斷邏輯
     signs = ["牡羊", "金牛", "雙子", "巨蟹", "獅子", "處女",
             "天秤", "天蠍", "射手", "魔羯", "水瓶", "雙魚"]
 

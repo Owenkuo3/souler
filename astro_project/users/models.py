@@ -1,6 +1,8 @@
 from django.db import models
 from accounts.models import UserProfile
 from .utils import calculate_full_chart, city_name_mapping, get_lat_lng_by_city
+from django.core.validators import MinValueValidator, MaxValueValidator
+
 
 
 class City(models.Model):
@@ -13,14 +15,14 @@ class City(models.Model):
 
 class UserBirthInfo(models.Model):
     user_profile = models.OneToOneField(UserProfile, on_delete=models.CASCADE, related_name='birth_info')
-    birth_year = models.IntegerField()
-    birth_month = models.IntegerField()
-    birth_day = models.IntegerField()
-    birth_hour = models.IntegerField()
-    birth_minute = models.IntegerField()
+    birth_year = models.IntegerField(validators=[MinValueValidator(1900), MaxValueValidator(2100)])
+    birth_month = models.IntegerField(validators=[MinValueValidator(1), MaxValueValidator(12)])
+    birth_day = models.IntegerField(validators=[MinValueValidator(1), MaxValueValidator(31)])
+    birth_hour = models.IntegerField(validators=[MinValueValidator(0), MaxValueValidator(23)])
+    birth_minute = models.IntegerField(validators=[MinValueValidator(0), MaxValueValidator(59)])
     birth_latitude = models.DecimalField(max_digits=9, decimal_places=6, blank=True, null=True)
     birth_longitude = models.DecimalField(max_digits=9, decimal_places=6, blank=True, null=True)
-    birth_location = models.CharField(max_length=100, blank=True, null=True) # 可選的文字地點
+    birth_location = models.CharField(max_length=100, blank=True, null=True)
 
     # 星座欄位
     sun_sign = models.CharField(max_length=20, blank=True, null=True)
@@ -57,11 +59,6 @@ class UserBirthInfo(models.Model):
         print(f"===> 檢查經緯度: {self.birth_latitude}, {self.birth_longitude}")
 
         try:
-            if all([
-                self.sun_sign, self.moon_sign, self.ascendant_sign,
-                self.mc_sign, self.ic_sign
-            ]):
-                return
             
             if all(value is not None for value in [
                 self.birth_year,

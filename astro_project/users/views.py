@@ -11,7 +11,8 @@ def enter_birth_info(request):
     try:
         user_profile = request.user.profile
     except UserProfile.DoesNotExist:
-        return HttpResponse("尚未建立個人檔案，請聯絡管理員")
+        return redirect('profile')  # 你可以改成正確的 URL name
+
     try:
         birth_info = user_profile.birth_info
         form = UserBirthInfoForm(instance=birth_info)
@@ -22,8 +23,12 @@ def enter_birth_info(request):
         form = UserBirthInfoForm(request.POST, instance=getattr(user_profile, 'birth_info', None))
         if form.is_valid():
             birth_info = form.save(commit=False)
-            birth_info.user_profile = user_profile
+            birth_info.user_profile = request.user.profile
             birth_info.save()
             return redirect('profile') 
-
+        
+    
+    
     return render(request, 'users/enter_birth_info.html', {'form': form})
+
+
