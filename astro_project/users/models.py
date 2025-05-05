@@ -25,26 +25,5 @@ class UserBirthInfo(models.Model):
     birth_longitude = models.DecimalField(max_digits=9, decimal_places=6, blank=True, null=True)
     birth_location = models.CharField(max_length=100, blank=True, null=True)
 
-    # 星座欄位
-    sun_sign = models.CharField(max_length=20, blank=True, null=True)
-    moon_sign = models.CharField(max_length=20, blank=True, null=True)
-    mercury_sign = models.CharField(max_length=20, blank=True, null=True)
-    venus_sign = models.CharField(max_length=20, blank=True, null=True)
-    mars_sign = models.CharField(max_length=20, blank=True, null=True)
-    jupiter_sign = models.CharField(max_length=20, blank=True, null=True)
-    saturn_sign = models.CharField(max_length=20, blank=True, null=True)
-    uranus_sign = models.CharField(max_length=20, blank=True, null=True)
-    neptune_sign = models.CharField(max_length=20, blank=True, null=True)
-    pluto_sign = models.CharField(max_length=20, blank=True, null=True)
-    ascendant_sign = models.CharField(max_length=10, null=True, blank=True)
-    descendant_sign = models.CharField(max_length=10, null=True, blank=True)
-    mc_sign = models.CharField(max_length=10, null=True, blank=True)  # 天頂
-    ic_sign = models.CharField(max_length=10, null=True, blank=True)  # 天底
-
     def __str__(self):
         return f"{self.user_profile.nickname} 的出生資訊"
-
-
-    def save(self, *args, **kwargs):
-        enrich_birth_info_with_coordinates_and_signs(self)
-        super().save(*args, **kwargs)

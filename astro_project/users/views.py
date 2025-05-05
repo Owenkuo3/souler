@@ -2,16 +2,13 @@ from django.shortcuts import render, redirect
 from .forms import UserBirthInfoForm
 from .models import UserBirthInfo
 from django.contrib.auth.decorators import login_required
-from django.http import HttpResponse
 from accounts.models import UserProfile
-
+from astrology.models import PlanetPosition
+from utils import calculate_full_chart  # 請用你實際的函數名稱
 
 @login_required
 def enter_birth_info(request):
-    try:
-        user_profile = request.user.profile
-    except UserProfile.DoesNotExist:
-        return redirect('profile')  # 你可以改成正確的 URL name
+    user_profile = request.user.profile
 
     try:
         birth_info = user_profile.birth_info
@@ -20,15 +17,27 @@ def enter_birth_info(request):
         form = UserBirthInfoForm()
 
     if request.method == 'POST':
-        form = UserBirthInfoForm(request.POST, instance=getattr(user_profile, 'birth_info', None))
         if form.is_valid():
             birth_info = form.save(commit=False)
-            birth_info.user_profile = request.user.profile
+            birth_info.user_profile = user_profile
             birth_info.save()
-            return redirect('profile') 
-        
-    
-    
-    return render(request, 'users/enter_birth_info.html', {'form': form})
 
+            # 清除舊星盤資料
+            PlanetPosition.objects.filter(user_profile=user_profile).delete()
+
+            # 計算星盤資料（utils 裡的函數請確認正確名稱）
+            chart_data = calculate_full_chart(birth_info)
+
+            for planet, data in chart_data.items():
+                PlanetPosition.objects.create(
+                    user_profile=user_profile,
+                    planet_name=planet,
+                    zodiac_sign=data['星座'],
+                    degree=data['度數'],
+                    house=data['宮位']
+                )
+
+            return redirect('profile')
+
+    return render(request, 'users/enter_birth_info.html', {'form': form})
 
