@@ -2,6 +2,7 @@ from django.db import models
 from accounts.models import UserProfile
 from .utils import calculate_full_chart, city_name_mapping, get_lat_lng_by_city
 from django.core.validators import MinValueValidator, MaxValueValidator
+from astrology.services.birth_info_service import enrich_birth_info_with_coordinates_and_signs
 
 
 
@@ -42,62 +43,8 @@ class UserBirthInfo(models.Model):
 
     def __str__(self):
         return f"{self.user_profile.nickname} 的出生資訊"
-    
 
-    def calculate_zodiac_signs_if_needed(self):
-        if self.birth_location:
-            # 先把中文城市轉成英文城市
-            english_city = city_name_mapping.get(self.birth_location, self.birth_location)
-            lat, lng = get_lat_lng_by_city(english_city)
-
-            if lat is not None and lng is not None:
-                self.birth_latitude = lat
-                self.birth_longitude = lng
-            else:
-                self.birth_latitude = None
-                self.birth_longitude = None
-        print(f"===> 檢查經緯度: {self.birth_latitude}, {self.birth_longitude}")
-
-        try:
-            
-            if all(value is not None for value in [
-                self.birth_year,
-                self.birth_month,
-                self.birth_day,
-                self.birth_hour,
-                self.birth_minute,
-                self.birth_latitude,
-                self.birth_longitude,
-            ]):
-            
-                chart = calculate_full_chart(
-                    self.birth_year,
-                    self.birth_month,
-                    self.birth_day,
-                    self.birth_hour,
-                    self.birth_minute,
-                    float(self.birth_latitude),
-                    float(self.birth_longitude),
-                )
-
-                self.sun_sign = chart["太陽"]["星座"]
-                self.moon_sign = chart["月亮"]["星座"]
-                self.mercury_sign = chart["水星"]["星座"]
-                self.venus_sign = chart["金星"]["星座"]
-                self.mars_sign = chart["火星"]["星座"]
-                self.jupiter_sign = chart["木星"]["星座"]
-                self.saturn_sign = chart["土星"]["星座"]
-                self.uranus_sign = chart["天王星"]["星座"]
-                self.neptune_sign = chart["海王星"]["星座"]
-                self.pluto_sign = chart["冥王星"]["星座"]
-                self.ascendant_sign = chart["上升"]["星座"]
-                self.descendant_sign = chart["下降"]["星座"]
-                self.mc_sign = chart["天頂"]["星座"]
-                self.ic_sign = chart["天底"]["星座"]
-                
-        except Exception as e:
-            print("星座計算失敗:", e)
 
     def save(self, *args, **kwargs):
-        self.calculate_zodiac_signs_if_needed()
+        enrich_birth_info_with_coordinates_and_signs(self)
         super().save(*args, **kwargs)
