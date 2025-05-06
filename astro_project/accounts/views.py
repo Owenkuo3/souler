@@ -7,6 +7,7 @@ from .models import UserProfile
 from users import templates
 from users.forms import UserBirthInfoForm  
 from users.models import UserBirthInfo
+from astrology import templates
 
 def register(request):
     if request.method == 'POST':
@@ -63,7 +64,7 @@ def profile(request):
             birth.user_profile = user_profile
             birth.save()
 
-            return redirect('profile')  # 表單成功送出後重整頁面
+            return redirect('user_chart')
     else:
         birth_form = UserBirthInfoForm(instance=birth_info)
         profile_form = UserProfileForm(instance=user_profile)

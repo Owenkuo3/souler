@@ -5,7 +5,6 @@ from django.core.validators import MinValueValidator, MaxValueValidator
 from astrology.services.birth_info_service import enrich_birth_info_with_coordinates_and_signs
 
 
-
 class City(models.Model):
     name = models.CharField(max_length=100)
     latitude = models.DecimalField(max_digits=9, decimal_places=6)

@@ -4,7 +4,8 @@ from .models import UserBirthInfo
 from django.contrib.auth.decorators import login_required
 from accounts.models import UserProfile
 from astrology.models import PlanetPosition
-from utils import calculate_full_chart  # 請用你實際的函數名稱
+from .utils import calculate_full_chart
+from astrology.services.birth_info_service import enrich_birth_info_with_coordinates_and_signs
 
 @login_required
 def enter_birth_info(request):
@@ -20,12 +21,17 @@ def enter_birth_info(request):
         if form.is_valid():
             birth_info = form.save(commit=False)
             birth_info.user_profile = user_profile
+
+            # 更新經緯度和星座
+            enrich_birth_info_with_coordinates_and_signs(birth_info)
+            
+            # 保存更新後的資料
             birth_info.save()
 
             # 清除舊星盤資料
             PlanetPosition.objects.filter(user_profile=user_profile).delete()
 
-            # 計算星盤資料（utils 裡的函數請確認正確名稱）
+            # 計算星盤資料
             chart_data = calculate_full_chart(birth_info)
 
             for planet, data in chart_data.items():
@@ -40,4 +46,3 @@ def enter_birth_info(request):
             return redirect('profile')
 
     return render(request, 'users/enter_birth_info.html', {'form': form})
-

@@ -3,7 +3,7 @@ from .models import UserBirthInfo, City
 
 @admin.register(UserBirthInfo)
 class UserBirthInfoAdmin(admin.ModelAdmin):
-    list_display = ('user_profile', 'birth_year', 'sun_sign', 'birth_location')
+    list_display = ('user_profile', 'birth_year', 'birth_location')
 
 @admin.register(City)
 class CityAdmin(admin.ModelAdmin):

@@ -14,6 +14,10 @@ RUN apt-get update && apt-get install -y \
     libz-dev \
     wget \
     unzip \
+    libfreetype6-dev \
+    libxft-dev \
+    libpng-dev \
+    pkg-config \
     && rm -rf /var/lib/apt/lists/*
 
 # 複製專案檔案

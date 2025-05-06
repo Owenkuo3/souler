@@ -90,6 +90,7 @@ def get_lat_lng_by_city(city_name):
 
     return city_coordinates.get(city_name, (None, None))
 
+
 city_name_mapping = {
     "台北": "Taipei",
     "高雄": "Kaohsiung",
