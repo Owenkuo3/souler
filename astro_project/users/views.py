@@ -22,16 +22,12 @@ def enter_birth_info(request):
             birth_info = form.save(commit=False)
             birth_info.user_profile = user_profile
 
-            # 更新經緯度和星座
             enrich_birth_info_with_coordinates_and_signs(birth_info)
             
-            # 保存更新後的資料
             birth_info.save()
 
-            # 清除舊星盤資料
             PlanetPosition.objects.filter(user_profile=user_profile).delete()
 
-            # 計算星盤資料
             chart_data = calculate_full_chart(birth_info)
 
             for planet, data in chart_data.items():
@@ -43,6 +39,6 @@ def enter_birth_info(request):
                     house=data['宮位']
                 )
 
-            return redirect('profile')
+            return redirect('astrology:user_chart.html')
 
     return render(request, 'users/enter_birth_info.html', {'form': form})
