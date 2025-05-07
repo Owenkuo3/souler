@@ -1,6 +1,6 @@
 from django import forms
 from .models import UserBirthInfo
-from .utils import city_name_mapping
+from astrology.utils.coordinates import city_name_mapping
 
 class UserBirthInfoForm(forms.ModelForm):
     birth_location = forms.ChoiceField(

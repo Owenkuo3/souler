@@ -11,23 +11,21 @@ from astrology.services.birth_info_service import enrich_birth_info_with_coordin
 def enter_birth_info(request):
     user_profile = request.user.profile
 
-    try:
-        birth_info = user_profile.birth_info
-        form = UserBirthInfoForm(instance=birth_info)
-    except UserBirthInfo.DoesNotExist:
-        form = UserBirthInfoForm()
+    # 檢查是否已有出生資料，如果有就直接導向 profile 頁（防止重複進入）
+    if hasattr(user_profile, 'birth_info'):
+        return redirect('accounts:profile')
 
     if request.method == 'POST':
+        form = UserBirthInfoForm(request.POST)
         if form.is_valid():
             birth_info = form.save(commit=False)
             birth_info.user_profile = user_profile
 
             enrich_birth_info_with_coordinates_and_signs(birth_info)
-            
             birth_info.save()
 
+            # 計算星盤並寫入 PlanetPosition
             PlanetPosition.objects.filter(user_profile=user_profile).delete()
-
             chart_data = calculate_full_chart(birth_info)
 
             for planet, data in chart_data.items():
@@ -39,6 +37,8 @@ def enter_birth_info(request):
                     house=data['宮位']
                 )
 
-            return redirect('astrology:chart_result.html')
+            return redirect('astrology:chart_result')
+    else:
+        form = UserBirthInfoForm()
 
     return render(request, 'users/enter_birth_info.html', {'form': form})

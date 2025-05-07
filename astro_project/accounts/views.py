@@ -6,6 +6,8 @@ from django.contrib.auth.decorators import login_required
 from .models import UserProfile
 from users.forms import UserBirthInfoForm  
 from users.models import UserBirthInfo
+from astrology.models import PlanetPosition
+from astrology.utils import calculate_full_chart
 
 def register(request):
     if request.method == 'POST':
@@ -40,29 +42,29 @@ def logout_view(request):
 
 @login_required
 def profile(request):
-    user = request.user
-    user_profile = user.profile
+    user_profile = request.user.profile
+    birth_info = getattr(user_profile, 'birth_info', None)
 
-    try:
-        birth_info = user_profile.birth_info
-    except UserBirthInfo.DoesNotExist:
-        birth_info = None
-
-    # 表單資料傳入
+    chart_data = calculate_full_chart(birth_info)
+    PlanetPosition.objects.filter(user_profile=user_profile).delete()
+    for planet, data in chart_data.items():
+        PlanetPosition.objects.create(
+            user_profile=user_profile,
+            planet_name=planet,
+            zodiac_sign=data['星座'],
+            degree=data['度數'],
+            house=data['宮位']
+        )
     if request.method == 'POST':
         birth_form = UserBirthInfoForm(request.POST, instance=birth_info)
         profile_form = UserProfileForm(request.POST, request.FILES, instance=user_profile)
 
         if birth_form.is_valid() and profile_form.is_valid():
-            # 儲存個人資料
             profile_form.save()
-
-            # 儲存星盤資料（補上 user_profile）
             birth = birth_form.save(commit=False)
             birth.user_profile = user_profile
             birth.save()
-
-            return redirect('astrology:chart_result')
+            return redirect('accounts:profile')
     else:
         birth_form = UserBirthInfoForm(instance=birth_info)
         profile_form = UserProfileForm(instance=user_profile)
