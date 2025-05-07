@@ -39,6 +39,6 @@ def enter_birth_info(request):
                     house=data['宮位']
                 )
 
-            return redirect('astrology:user_chart.html')
+            return redirect('astrology:chart_result.html')
 
     return render(request, 'users/enter_birth_info.html', {'form': form})

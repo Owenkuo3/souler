@@ -4,10 +4,8 @@ from django.contrib.auth.forms import UserCreationForm, AuthenticationForm
 from .forms import RegistrationForm, LoginForm, UserProfileForm
 from django.contrib.auth.decorators import login_required
 from .models import UserProfile
-from users import templates
 from users.forms import UserBirthInfoForm  
 from users.models import UserBirthInfo
-from astrology import templates
 
 def register(request):
     if request.method == 'POST':
@@ -64,7 +62,7 @@ def profile(request):
             birth.user_profile = user_profile
             birth.save()
 
-            return redirect('user_chart')
+            return redirect('astrology:chart_result')
     else:
         birth_form = UserBirthInfoForm(instance=birth_info)
         profile_form = UserProfileForm(instance=user_profile)

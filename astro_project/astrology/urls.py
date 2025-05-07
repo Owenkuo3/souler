@@ -1,8 +1,9 @@
 from django.urls import path
-from .views import user_chart_view
+from . import views
 
+app_name = 'astrology'
 
 urlpatterns = [
-    path('my-chart/', user_chart_view, name='user_chart'),
+    path('chart/', views.chart_result, name='chart_result'),
 
 ]
