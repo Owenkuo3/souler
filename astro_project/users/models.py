@@ -1,17 +1,8 @@
 from django.db import models
 from accounts.models import UserProfile
-from .utils import calculate_full_chart, city_name_mapping, get_lat_lng_by_city
+from .utils import city_name_mapping, get_lat_lng_by_city
 from django.core.validators import MinValueValidator, MaxValueValidator
-from astrology.services.birth_info_service import enrich_birth_info_with_coordinates_and_signs
 
-
-class City(models.Model):
-    name = models.CharField(max_length=100)
-    latitude = models.DecimalField(max_digits=9, decimal_places=6)
-    longitude = models.DecimalField(max_digits=9, decimal_places=6)
-
-    def __str__(self):
-        return self.name
 
 class UserBirthInfo(models.Model):
     user_profile = models.OneToOneField(UserProfile, on_delete=models.CASCADE, related_name='birth_info')
@@ -26,3 +17,10 @@ class UserBirthInfo(models.Model):
 
     def __str__(self):
         return f"{self.user_profile.nickname} 的出生資訊"
+    
+    def save(self, *args, **kwargs):
+        if self.birth_location and not self.birth_latitude:
+            lat, lon = get_lat_lng_by_city(self.birth_location)
+            self.birth_latitude = lat
+            self.birth_longitude = lon
+        super().save(*args, **kwargs)
