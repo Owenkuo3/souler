@@ -11,6 +11,7 @@ def enter_birth_info(request):
     user_profile = request.user.profile
 
     if hasattr(user_profile, 'birth_info'):
+        birth_info.save()
         return redirect('accounts:profile')
 
     if request.method == 'POST':
@@ -18,6 +19,7 @@ def enter_birth_info(request):
         if form.is_valid():
             birth_info = form.save(commit=False)
             birth_info.user_profile = user_profile
+            birth_info.save()
 
             generate_chart_and_save(user_profile, birth_info)
 

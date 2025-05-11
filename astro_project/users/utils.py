@@ -26,7 +26,6 @@ def calculate_full_chart(year, month, day, hour, minute, latitude, longitude):
     signs = ["牡羊", "金牛", "雙子", "巨蟹", "獅子", "處女",
              "天秤", "天蠍", "射手", "魔羯", "水瓶", "雙魚"]
 
-    # 計算宮位
     cusps, ascmc = swe.houses(jd, latitude, longitude, b'P')
 
     result = {}
@@ -35,13 +34,12 @@ def calculate_full_chart(year, month, day, hour, minute, latitude, longitude):
         degree = planet_pos[0]
         zodiac_sign = int(degree / 30)
 
-        # 宮位計算邏輯
         house = get_house_from_degree(degree, cusps)
 
         result[name] = {
             "度數": round(degree, 4),
             "星座": signs[zodiac_sign],
-            "宮位": f"第 {house} 宮",
+            "宮位": house,
         }
 
     # 加入上升、下降、天頂、天底
@@ -87,8 +85,11 @@ def get_house_from_degree(degree, cusps):
 
 
 def get_lat_lng_by_city(city_name):
+    eng_name = city_name_mapping.get(city_name)
+    if not eng_name:
+        return (None, None)
+    return city_coordinates.get(eng_name, (None, None))
 
-    return city_coordinates.get(city_name, (None, None))
 
 
 city_name_mapping = {

@@ -7,7 +7,10 @@ from .models import UserProfile
 from users.forms import UserBirthInfoForm  
 from users.models import UserBirthInfo
 from astrology.models import PlanetPosition
-from astrology.utils import calculate_full_chart
+from users.utils import calculate_full_chart
+from astrology.service.chart_service import generate_chart_and_save
+
+
 
 def register(request):
     if request.method == 'POST':
@@ -45,16 +48,6 @@ def profile(request):
     user_profile = request.user.profile
     birth_info = getattr(user_profile, 'birth_info', None)
 
-    chart_data = calculate_full_chart(birth_info)
-    PlanetPosition.objects.filter(user_profile=user_profile).delete()
-    for planet, data in chart_data.items():
-        PlanetPosition.objects.create(
-            user_profile=user_profile,
-            planet_name=planet,
-            zodiac_sign=data['星座'],
-            degree=data['度數'],
-            house=data['宮位']
-        )
     if request.method == 'POST':
         birth_form = UserBirthInfoForm(request.POST, instance=birth_info)
         profile_form = UserProfileForm(request.POST, request.FILES, instance=user_profile)
@@ -63,8 +56,12 @@ def profile(request):
             profile_form.save()
             birth = birth_form.save(commit=False)
             birth.user_profile = user_profile
-            birth.save()
-            return redirect('accounts:profile')
+            birth.save()  # 此時會觸發 birth_info model 裡的 save()，寫入經緯度
+        
+            generate_chart_and_save(user_profile, birth)
+
+
+            return redirect('astrology:chart_result')
     else:
         birth_form = UserBirthInfoForm(instance=birth_info)
         profile_form = UserProfileForm(instance=user_profile)
@@ -74,7 +71,6 @@ def profile(request):
         'profile_form': profile_form,
         'birth_info': birth_info,
     })
-
 
 
 def home(request):
