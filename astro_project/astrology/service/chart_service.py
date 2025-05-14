@@ -26,12 +26,15 @@ def generate_chart_and_save(user_profile, birth_info):
     
     # 創建新的 PlanetPosition 資料
     for planet, data in chart_data.items():
-        # 檢查 '宮位' 是否在資料中
+        degree = data['度數']
+        correct_degree = degree % 30
+
         house = data.get('宮位', None)  # 如果不存在則返回 None
         PlanetPosition.objects.create(
             user_profile=user_profile,
             planet_name=planet,
             zodiac_sign=data['星座'],
-            degree=data['度數'],
+            degree=degree,  # 原始度數
+            correct_degree=correct_degree,  # 修正後的度數
             house=house,  # 如果 '宮位' 為 None，則存入 None
         )

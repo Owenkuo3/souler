@@ -8,6 +8,8 @@ class PlanetPosition(models.Model):
     degree = models.FloatField() 
     house = models.IntegerField(null=True, blank=True) 
     created_at = models.DateTimeField(auto_now_add=True)
+    correct_degree = models.FloatField()
+
 
     def __str__(self):
         return f"{self.planet_name} in {self.zodiac_sign} ({self.degree}°)"

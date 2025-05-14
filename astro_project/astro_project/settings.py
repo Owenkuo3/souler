@@ -41,6 +41,7 @@ INSTALLED_APPS = [
     'accounts',
     'users',
     'astrology',
+    'matching',
 ]
 
 MIDDLEWARE = [
