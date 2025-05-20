@@ -1,0 +1,20 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+</head>
+<body>
+    <h2>配對候選名單（依合盤分數排序）</h2>
+    <ul>
+      {% for item in candidates %}
+        <li>
+          {{ item.profile.nickname }} - 分數：{{ item.score }}
+        </li>
+      {% empty %}
+        <li>目前沒有符合的候選者</li>
+      {% endfor %}
+    </ul>    
+
+</body>
+</html>

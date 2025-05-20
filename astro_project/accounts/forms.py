@@ -16,4 +16,15 @@ class LoginForm(AuthenticationForm):
 class UserProfileForm(forms.ModelForm):
     class Meta:
         model = UserProfile
-        fields = ['nickname', 'gender', 'photo', 'bio']
+        fields = ['nickname', 'gender', 'match_gender', 'photo', 'bio']
+
+    match_gender = forms.ChoiceField(
+        choices=[
+            ('M', '只配對男生'),
+            ('F', '只配對女生'),
+            ('O', '只配對其他性別'),
+            ('A', '不限性別')
+        ],
+        label='配對對象性別',
+        widget=forms.Select()
+    )
