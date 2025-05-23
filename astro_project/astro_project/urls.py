@@ -22,4 +22,6 @@ urlpatterns = [
     path('accounts/', include('accounts.urls')), 
     path('users/', include('users.urls')),
     path('astrology/', include('astrology.urls')),
+    path('match/', include('matching.urls')),
+
 ]

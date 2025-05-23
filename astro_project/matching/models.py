@@ -1,5 +1,7 @@
 from django.db import models
 from django.conf import settings
+from django.contrib.auth.models import User
+
 
 class MatchScore(models.Model):
     user_a = models.ForeignKey(
@@ -22,3 +24,17 @@ class MatchScore(models.Model):
 
     class Meta:
         unique_together = ('user_a', 'user_b')
+
+
+class Match(models.Model):
+    from_user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='given_likes')
+    to_user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='received_likes')
+    liked = models.BooleanField()  # True = 喜歡，False = 不喜歡
+    timestamp = models.DateTimeField(auto_now_add=True)
+    matched = models.BooleanField(default=False)  # 是否雙方都喜歡
+
+    class Meta:
+        unique_together = ('from_user', 'to_user')  # 每對只能有一筆紀錄
+
+    def __str__(self):
+        return f'{self.from_user} → {self.to_user} | {self.liked} | Match: {self.matched}'

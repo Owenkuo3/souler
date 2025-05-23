@@ -6,15 +6,19 @@
 </head>
 <body>
     <h2>配對候選名單（依合盤分數排序）</h2>
-    <ul>
-      {% for item in candidates %}
-        <li>
-          {{ item.profile.nickname }} - 分數：{{ item.score }}
-        </li>
-      {% empty %}
-        <li>目前沒有符合的候選者</li>
-      {% endfor %}
-    </ul>    
+
+    {% for candidate in candidates %}
+    <div class="candidate-card">
+      <img src="{{ candidate.profile.photo.url }}" alt="照片" width="100">
+      <h3>{{ candidate.profile.nickname }}</h3>
+      <p>配對分數：{{ candidate.score }}</p>
+
+      <a href="{% url 'send_match_action' to_user_id=candidate.profile.user.id liked='true' %}" class="btn btn-success">♥ 喜歡</a>
+      <a href="{% url 'send_match_action' to_user_id=candidate.profile.user.id liked='false' %}" class="btn btn-secondary">× 不喜歡</a>
+    </div>
+    {% empty %}
+      <p>目前沒有符合的候選者</p>
+    {% endfor %}
 
 </body>
 </html>
