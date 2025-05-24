@@ -1,3 +1,5 @@
+{% load static %}
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -9,8 +11,11 @@
 
     {% for candidate in candidates %}
     <div class="candidate-card">
-      <img src="{{ candidate.profile.photo.url }}" alt="照片" width="100">
-      <h3>{{ candidate.profile.nickname }}</h3>
+      {% if candidate.profile.photo %}
+        <img src="{{ candidate.profile.photo.url }}" alt="照片" width="100">
+      {% else %}
+        <img src="{% static 'images/default-avatar.jpg' %}" alt="預設大頭照" width="100">
+      {% endif %}
       <p>配對分數：{{ candidate.score }}</p>
 
       <a href="{% url 'send_match_action' to_user_id=candidate.profile.user.id liked='true' %}" class="btn btn-success">♥ 喜歡</a>

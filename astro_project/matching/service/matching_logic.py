@@ -18,7 +18,7 @@ def get_matching_candidates(user, top_n=10):
     # 計算配對分數
     scored_candidates = []
     for candidate in candidates:
-        score = calculate_composite_score(user, candidate.user)
+        score, _ = calculate_match_score(my_profile, candidate)
         scored_candidates.append({
             'profile': candidate,
             'score': score
