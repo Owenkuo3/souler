@@ -1,6 +1,8 @@
 from django.db import models
 from django.conf import settings
 from django.contrib.auth.models import User
+from accounts.models import UserProfile
+
 
 
 class MatchScore(models.Model):
@@ -26,15 +28,22 @@ class MatchScore(models.Model):
         unique_together = ('user_a', 'user_b')
 
 
-class Match(models.Model):
-    from_user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='given_likes')
-    to_user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='received_likes')
-    liked = models.BooleanField()  # True = 喜歡，False = 不喜歡
+class MatchAction(models.Model):
+    LIKE = 'like'
+    DISLIKE = 'dislike'
+
+    ACTION_CHOICES = [
+        (LIKE, '喜歡'),
+        (DISLIKE, '不喜歡'),
+    ]
+
+    from_user = models.ForeignKey(UserProfile, related_name='from_user_actions', on_delete=models.CASCADE)
+    to_user = models.ForeignKey(UserProfile, related_name='to_user_actions', on_delete=models.CASCADE)
+    action = models.CharField(max_length=10, choices=ACTION_CHOICES)
     timestamp = models.DateTimeField(auto_now_add=True)
-    matched = models.BooleanField(default=False)  # 是否雙方都喜歡
 
     class Meta:
-        unique_together = ('from_user', 'to_user')  # 每對只能有一筆紀錄
+        unique_together = ('from_user', 'to_user')  # 每個 from_user 對 to_user 只能操作一次
 
     def __str__(self):
-        return f'{self.from_user} → {self.to_user} | {self.liked} | Match: {self.matched}'
+        return f"{self.from_user} -> {self.to_user}: {self.action}"

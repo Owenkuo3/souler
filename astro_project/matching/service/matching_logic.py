@@ -18,11 +18,7 @@ def get_matching_candidates(user, top_n=10):
     # 計算配對分數
     scored_candidates = []
     for candidate in candidates:
-<<<<<<< HEAD
         score, _ = calculate_match_score(my_profile, candidate)
-=======
-        score = calculate_match_score(user, candidate.user)
->>>>>>> 60c8c43 (250526 MAC)
         scored_candidates.append({
             'profile': candidate,
             'score': score

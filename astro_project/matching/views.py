@@ -4,38 +4,51 @@ from django.contrib.auth.decorators import login_required
 from django.shortcuts import get_object_or_404, redirect
 from django.contrib import messages
 from accounts.models import UserProfile
-from matching.models import Match
+from matching.models import MatchAction
 from django.contrib.auth.models import User
+from django.http import JsonResponse
+from django.views.decorators.http import require_POST
 
+
+@require_POST
 @login_required
-def send_match_action(request, to_user_id, liked):
-    from_user = request.user
-    to_user = get_object_or_404(User, id=to_user_id)
+def send_match_action(request):
+    from_user = request.user.userprofile
+    to_user_id = request.POST.get('to_user_id')
+    action = request.POST.get('action')  # like 或 dislike
 
-    if from_user == to_user:
-        messages.error(request, "你不能對自己按讚！")
-        return redirect('candidate_list')  # 替換為你的配對頁面 URL 名稱
-
-    # 建立或更新配對紀錄
-    match, created = Match.objects.update_or_create(
-        from_user=from_user,
-        to_user=to_user,
-        defaults={'liked': liked}
-    )
+    # 確保欄位都有填
+    if not to_user_id or action not in ['like', 'dislike']:
+        return JsonResponse({'status': 'error', 'message': '資料不完整'}, status=400)
 
     try:
-        reverse_match = Match.objects.get(from_user=to_user, to_user=from_user)
-        if reverse_match.liked and liked:
-            # 雙方都喜歡，配對成功！
-            match.matched = True
-            match.save()
-            reverse_match.matched = True
-            reverse_match.save()
-            messages.success(request, "配對成功！你們現在可以聊天了！")
-    except Match.DoesNotExist:
-        pass
+        to_user = UserProfile.objects.get(id=to_user_id)
+    except UserProfile.DoesNotExist:
+        return JsonResponse({'status': 'error', 'message': '找不到使用者'}, status=404)
 
-    return redirect('candidate_list')
+    # 如果已經存在一筆記錄就不要重複新增
+    obj, created = MatchAction.objects.get_or_create(
+        from_user=from_user,
+        to_user=to_user,
+        defaults={'action': action},
+    )
+
+    if not created:
+        return JsonResponse({'status': 'error', 'message': '已經操作過'}, status=400)
+
+    # 如果使用者按的是 "like"，而對方也已經按過 like，那就配對成功
+    is_match = False
+    if action == 'like':
+        reverse_action = MatchAction.objects.filter(
+            from_user=to_user,
+            to_user=from_user,
+            action='like'
+        ).exists()
+        if reverse_action:
+            is_match = True
+            # 你可以在這裡加入建立聊天室的邏輯（之後會做）
+
+    return JsonResponse({'status': 'ok', 'match': is_match})
 
 @login_required
 def show_match_candidates(request):
