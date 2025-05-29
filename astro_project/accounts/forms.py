@@ -16,7 +16,8 @@ class LoginForm(AuthenticationForm):
 class UserProfileForm(forms.ModelForm):
     class Meta:
         model = UserProfile
-        fields = ['nickname', 'gender', 'match_gender', 'photo', 'bio']
+        fields = ['nickname', 'gender', 'match_gender', 'photo', 'bio',
+            'preferred_age_min', 'preferred_age_max',]
 
     match_gender = forms.ChoiceField(
         choices=[
