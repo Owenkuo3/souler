@@ -18,8 +18,19 @@
       {% endif %}
       <p>配對分數：{{ candidate.score }}</p>
 
-      <a href="{% url 'send_match_action' to_user_id=candidate.profile.user.id liked='true' %}" class="btn btn-success">♥ 喜歡</a>
-      <a href="{% url 'send_match_action' to_user_id=candidate.profile.user.id liked='false' %}" class="btn btn-secondary">× 不喜歡</a>
+      <form method="POST" action="{% url 'send_match_action' %}">
+        {% csrf_token %}
+        <input type="hidden" name="to_user_id" value="{{ candidate.profile.id }}">
+        <input type="hidden" name="action" value="like">
+        <button type="submit">♥ 喜歡</button>
+      </form>
+      
+      <form method="POST" action="{% url 'send_match_action' %}">
+        {% csrf_token %}
+        <input type="hidden" name="to_user_id" value="{{ candidate.profile.id }}">
+        <input type="hidden" name="action" value="dislike">
+        <button type="submit">× 不喜歡</button>
+      </form>
     </div>
     {% empty %}
       <p>目前沒有符合的候選者</p>

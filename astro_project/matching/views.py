@@ -8,12 +8,14 @@ from matching.models import MatchAction
 from django.contrib.auth.models import User
 from django.http import JsonResponse
 from django.views.decorators.http import require_POST
+from chat.models import ChatRoom 
+
 
 
 @require_POST
 @login_required
 def send_match_action(request):
-    from_user = request.user.userprofile
+    from_user = request.user.profile
     to_user_id = request.POST.get('to_user_id')
     action = request.POST.get('action')  # like 或 dislike
 
@@ -43,10 +45,26 @@ def send_match_action(request):
             from_user=to_user,
             to_user=from_user,
             action='like'
-        ).exists()
+        ).first()
+
         if reverse_action:
             is_match = True
-            # 你可以在這裡加入建立聊天室的邏輯（之後會做）
+
+            # 更新雙方 match 資訊（你可以視情況加上 is_match 欄位）
+            obj.is_match = True
+            reverse_action.is_match = True
+            obj.save()
+            reverse_action.save()
+
+            # ✅ 建立聊天室（避免重複）
+            existing_chat = ChatRoom.objects.filter(
+                user1=from_user, user2=to_user
+            ).exists() or ChatRoom.objects.filter(
+                user1=to_user, user2=from_user
+            ).exists()
+
+            if not existing_chat:
+                ChatRoom.objects.create(user1=from_user, user2=to_user)
 
     return JsonResponse({'status': 'ok', 'match': is_match})
 
