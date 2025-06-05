@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>我的聊天室</title>
+</head>
+<body>
+    <h2>配對成功的聊天室列表</h2>
+
+    {% if rooms %}
+        <ul>
+            {% for room in rooms %}
+            <li>
+                <a href="{% url 'chat_room_detail' room.id %}">
+                與 {{ room.other_username }} 的聊天室
+                </a>
+            </li>
+            {% endfor %}
+        </ul>
+    {% else %}
+        <p>目前沒有聊天室</p>
+    {% endif %}
+</body>
+</html>

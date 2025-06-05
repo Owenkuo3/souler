@@ -23,5 +23,7 @@ urlpatterns = [
     path('users/', include('users.urls')),
     path('astrology/', include('astrology.urls')),
     path('matching/', include('matching.urls')),
+    path('chat/', include('chat.urls')),
+
 
 ]

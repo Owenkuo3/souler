@@ -1,3 +1,5 @@
+
+
 def get_lat_lng_by_city(city_name):
 
     return city_coordinates.get(city_name, (None, None))
