@@ -20,7 +20,7 @@ def get_matching_candidates(user, top_n=10):
     for candidate in candidates:
         score, _ = calculate_match_score(my_profile, candidate)
         scored_candidates.append({
-            'profile': candidate,
+            'userprofile': candidate,
             'score': score
         })
 

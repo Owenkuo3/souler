@@ -20,14 +20,14 @@
 
       <form method="POST" action="{% url 'send_match_action' %}">
         {% csrf_token %}
-        <input type="hidden" name="to_user_id" value="{{ candidate.profile.id }}">
+        <input type="hidden" name="to_user_id" value="{{ candidate.userprofile.id }}">
         <input type="hidden" name="action" value="like">
         <button type="submit">♥ 喜歡</button>
       </form>
       
       <form method="POST" action="{% url 'send_match_action' %}">
         {% csrf_token %}
-        <input type="hidden" name="to_user_id" value="{{ candidate.profile.id }}">
+        <input type="hidden" name="to_user_id" value="{{ candidate.userprofile.id }}">
         <input type="hidden" name="action" value="dislike">
         <button type="submit">× 不喜歡</button>
       </form>
