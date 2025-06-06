@@ -1,0 +1,47 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+    <meta charset="UTF-8">
+    <title>與 {{ other_user.username }} 的聊天室</title>
+    <style>
+        .chat-box {
+            border: 1px solid #ccc;
+            padding: 1em;
+            height: 300px;
+            overflow-y: scroll;
+            margin-bottom: 1em;
+            background-color: #f9f9f9;
+        }
+        .message {
+            margin: 0.5em 0;
+        }
+        .message.self {
+            text-align: right;
+            color: blue;
+        }
+    </style>
+</head>
+<body>
+    <h2>與 {{ other_user.username }} 的聊天室</h2>
+
+    <div class="chat-box">
+        {% for msg in room.messages.all %}
+            <div class="message {% if msg.sender == request.user %}self{% endif %}">
+                <strong>{{ msg.sender.username }}：</strong> {{ msg.content }} <br>
+                <small>{{ msg.timestamp|date:"Y-m-d H:i" }}</small>
+            </div>
+        {% empty %}
+            <p>尚無訊息</p>
+        {% endfor %}
+    </div>
+
+    <form method="post">
+        {% csrf_token %}
+        <input type="text" name="text" placeholder="輸入訊息..." required>
+        <button type="submit">送出</button>
+    </form>
+
+    <p><a href="{% url 'chat_room_list' %}">← 返回聊天室列表</a></p>
+</body>
+</html>

@@ -43,6 +43,9 @@ INSTALLED_APPS = [
     'astrology',
     'matching',
     'chat',
+    'api',
+    'rest_framework',
+
 ]
 
 MIDDLEWARE = [

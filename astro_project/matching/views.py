@@ -51,7 +51,6 @@ def send_match_action(request):
             obj.save()
             reverse_action.save()
 
-            # ✅ 改這裡！
             user1 = from_user_profile.user
             user2 = to_user_profile.user
 
