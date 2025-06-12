@@ -5,7 +5,7 @@ from django.shortcuts import get_object_or_404, redirect
 from django.contrib import messages
 from accounts.models import UserProfile
 from matching.models import MatchAction
-from django.contrib.auth.models import User
+from django.conf import settings
 from django.http import JsonResponse
 from django.views.decorators.http import require_POST
 from chat.models import ChatRoom 

@@ -1,10 +1,17 @@
 from django.urls import path
-from .views import RegisterAPIView, current_user_info, request_verification_code, VerifyEmailCodeAPIView
+from .views import RegisterAPIView, VerifyEmailCodeAPIView, VerifyEmailCodeAPIView, CurrentUserProfileView
+from rest_framework_simplejwt.views import (
+    TokenObtainPairView,
+    TokenRefreshView,
+)
+
 
 urlpatterns = [
     path('register/', RegisterAPIView.as_view(), name='register'),
-    path('me/', current_user_info, name='current_user_info'),
-    path('request-verification-code/', request_verification_code),
+    path('me/profile/', CurrentUserProfileView.as_view(), name='current_user_profile'),
+    path('request-verification-code/', VerifyEmailCodeAPIView.as_view(), name='request-code'),
     path('verify-code/', VerifyEmailCodeAPIView.as_view(), name='verify-code'),
+    path('token/', TokenObtainPairView.as_view(), name='token_obtain_pair'),  # 登入
+    path('token/refresh/', TokenRefreshView.as_view(), name='token_refresh'),  # 刷新 access token
 
 ]

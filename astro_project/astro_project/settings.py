@@ -148,3 +148,5 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
 EMAIL_HOST_USER = 'noreply@yourapp.com'  # 顯示寄件人
+
+AUTH_USER_MODEL = 'accounts.CustomUser'

@@ -8,7 +8,7 @@ def chart_result(request):
     user_profile = request.user.profile
     planet_positions = PlanetPosition.objects.filter(user_profile=user_profile)
 
-    chart_img = draw_chart(planet_positions)  # 把圖畫出來轉 base64
+    chart_img = draw_chart(planet_positions)
 
     return render(request, 'astrology/chart_result.html', {
         'planet_positions': planet_positions,

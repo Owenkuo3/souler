@@ -1,9 +1,6 @@
 from django.db import models
 from django.conf import settings
-from django.contrib.auth.models import User
 from accounts.models import UserProfile
-
-
 
 class MatchScore(models.Model):
     user_a = models.ForeignKey(
