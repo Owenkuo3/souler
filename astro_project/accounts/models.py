@@ -2,6 +2,10 @@ from django.db import models
 from django.contrib.auth import get_user_model
 from django.contrib.auth.models import AbstractUser, BaseUserManager
 from django.utils.translation import gettext_lazy as _
+from PIL import Image
+from io import BytesIO
+from django.core.files.base import ContentFile
+
 
 class CustomUserManager(BaseUserManager):
     def create_user(self, email, password=None, **extra_fields):
@@ -62,3 +66,17 @@ class UserProfile(models.Model):
 
     def __str__(self):
         return self.nickname
+    def save(self, *args, **kwargs):
+        if self.photo:
+            img = Image.open(self.photo)
+
+            if img.mode != 'RGB':
+                img = img.convert('RGB')
+
+            output_io = BytesIO()
+            img.save(output_io, format='JPEG', quality=70)
+            output_io.seek(0)
+
+            self.photo.save(self.photo.name, ContentFile(output_io.read()), save=False)
+
+        super().save(*args, **kwargs)

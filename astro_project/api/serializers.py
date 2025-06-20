@@ -5,6 +5,9 @@ from django.utils import timezone
 from datetime import timedelta
 from accounts.models import CustomUser, UserProfile
 from users.models import UserBirthInfo
+from PIL import Image
+from io import BytesIO
+from django.core.files.base import ContentFile
 
 
 
@@ -74,3 +77,39 @@ class UserProfileSerializer(serializers.ModelSerializer):
     class Meta:
         model = UserProfile
         fields = ['nickname', 'bio', 'gender', 'match_gender', 'preferred_age_min', 'preferred_age_max', 'photo', 'birth_info']
+
+        def validate_photo(self, image):
+            img = Image.open(image)
+
+            if img.mode in ("RGBA", "P"):
+                img = img.convert("RGB")
+
+            max_size = (1024, 1024)
+            img.thumbnail(max_size)
+
+            buffer = BytesIO()
+            img.save(buffer, format='JPEG', quality=70)
+
+            new_image = ContentFile(buffer.getvalue())
+            new_image.name = f"{image.name.split('.')[0]}.jpg"
+
+            return new_image
+        
+class UserBirthInfoCreateUpdateSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = UserBirthInfo
+        exclude = ['id']
+        extra_kwargs = {
+            'user_profile': {'read_only': True}
+        }
+
+    def create(self, validated_data):
+        user = self.context['request'].user
+        user_profile = user.profile
+        return UserBirthInfo.objects.create(user_profile=user_profile, **validated_data)
+
+    def update(self, instance, validated_data):
+        for attr, value in validated_data.items():
+            setattr(instance, attr, value)
+        instance.save()
+        return instance

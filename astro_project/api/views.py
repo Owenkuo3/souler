@@ -2,14 +2,15 @@ import random
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
-from .serializers import RegisterSerializer, VerifyEmailCodeSerializer
+from .serializers import RegisterSerializer, VerifyEmailCodeSerializer, UserBirthInfoCreateUpdateSerializer, UserProfileSerializer
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.decorators import api_view, permission_classes
 from .models import EmailVerificationCode
 from django.utils import timezone
 from datetime import timedelta
-from .serializers import UserProfileSerializer
 from accounts.models import UserProfile
+from rest_framework.parsers import MultiPartParser, FormParser, JSONParser
+
 
 
 class RegisterAPIView(APIView):
@@ -59,3 +60,50 @@ class CurrentUserProfileView(APIView):
 
         serializer = UserProfileSerializer(profile)
         return Response(serializer.data)
+    
+class UpdateUserProfileView(APIView):
+    permission_classes = [IsAuthenticated]
+    parser_classes = [MultiPartParser, FormParser, JSONParser]
+
+    def patch(self, request):
+        user = request.user
+        try:
+            profile = user.profile
+        except UserProfile.DoesNotExist:
+            return Response({"error": "找不到使用者的個人資料"}, status=404)
+
+        serializer = UserProfileSerializer(profile, data=request.data, partial=True)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+    
+class UserBirthInfoView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        try:
+            birth_info = request.user.profile.birth_info
+            serializer = UserBirthInfoCreateUpdateSerializer(birth_info)
+            return Response(serializer.data)
+        except UserBirthInfo.DoesNotExist:
+            return Response({"detail": "尚未填寫出生資料"}, status=404)
+
+    def post(self, request):
+        serializer = UserBirthInfoCreateUpdateSerializer(data=request.data, context={'request': request})
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data, status=201)
+        return Response(serializer.errors, status=400)
+
+    def patch(self, request):
+        try:
+            birth_info = request.user.profile.birth_info
+        except UserBirthInfo.DoesNotExist:
+            return Response({"detail": "尚未填寫出生資料"}, status=404)
+
+        serializer = UserBirthInfoCreateUpdateSerializer(birth_info, data=request.data, partial=True, context={'request': request})
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data)
+        return Response(serializer.errors, status=400)
