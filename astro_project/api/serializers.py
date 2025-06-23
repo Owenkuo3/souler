@@ -21,15 +21,12 @@ class RegisterSerializer(serializers.Serializer):
         password = data['password']
         password2 = data['password2']
 
-        # 確認密碼一致
         if password != password2:
             raise serializers.ValidationError("兩次輸入的密碼不一致")
 
-        # 檢查 Email 是否已驗證
         if not EmailVerificationCode.objects.filter(email=email, is_verified=True).exists():
             raise serializers.ValidationError("請先完成 Email 驗證")
 
-        # 檢查是否已註冊過
         if CustomUser.objects.filter(username=email).exists():
             raise serializers.ValidationError("此 Email 已經註冊過")
 
