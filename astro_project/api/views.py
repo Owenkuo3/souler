@@ -172,39 +172,15 @@ class NatalChartView(APIView):
 class MatchCandidatesView(APIView):
     permission_classes = [IsAuthenticated]
 
-    def get_matching_candidates(user, top_n=10):
-        my_profile = user.profile
-        preferred_gender = my_profile.match_gender
+    def get(self, request):
+        user = request.user
+        candidates = get_matching_candidates(user, top_n=10)
 
-        candidates = UserProfile.objects.exclude(user=user)
-        if preferred_gender != 'A':
-            candidates = candidates.filter(gender=preferred_gender)
+        data = []
+        for item in candidates:
+            profile_data = UserProfileSerializer(item['userprofile']).data
+            profile_data['match_score'] = item['score']
+            data.append(profile_data)
 
-        one_week_ago = timezone.now() - timedelta(days=7)
-        candidates = candidates.filter(user__last_login__gte=one_week_ago)
-
-        scored_candidates = []
-        for candidate in candidates:
-            match_score, created = MatchScore.objects.get_or_create(
-                user_a=user,
-                user_b=candidate.user,
-                defaults=lambda: {
-                    'score': 0, 
-                }
-            )
-
-            if created or match_score.score == 0:
-                score, matched_aspects = calculate_match_score(my_profile, candidate)
-                match_score.score = score
-                match_score.matched_aspects = matched_aspects
-                match_score.save()
-            else:
-                score = match_score.score
-
-            scored_candidates.append({
-                'userprofile': candidate,
-                'score': score,
-            })
-
-        scored_candidates.sort(key=lambda x: x['score'], reverse=True)
-        return scored_candidates[:top_n]
+        return Response(data)
+    
