@@ -11,7 +11,6 @@ from users.utils import calculate_full_chart
 from astrology.service.chart_service import generate_chart_and_save
 
 
-
 def register(request):
     if request.method == 'POST':
         form = RegistrationForm(request.POST)

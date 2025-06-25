@@ -8,7 +8,7 @@ from users.models import UserBirthInfo
 from PIL import Image
 from io import BytesIO
 from django.core.files.base import ContentFile
-
+from astrology.models import PlanetPosition
 
 
 class RegisterSerializer(serializers.Serializer):
@@ -24,18 +24,23 @@ class RegisterSerializer(serializers.Serializer):
         if password != password2:
             raise serializers.ValidationError("兩次輸入的密碼不一致")
 
-        if not EmailVerificationCode.objects.filter(email=email, is_verified=True).exists():
+        try:
+            record = EmailVerificationCode.objects.filter(email=email, is_verified=True).latest('created_at')
+        except EmailVerificationCode.DoesNotExist:
             raise serializers.ValidationError("請先完成 Email 驗證")
 
-        if CustomUser.objects.filter(username=email).exists():
+        if CustomUser.objects.filter(email=email).exists():
             raise serializers.ValidationError("此 Email 已經註冊過")
+        
+        if record.is_expired(minutes=30):
+            raise serializers.ValidationError("驗證過期，請重新驗證 Email")
 
         return data
 
     def create(self, validated_data):
         email = validated_data['email']
         password = validated_data['password']
-        user = CustomUser.objects.create_user(username=email, email=email, password=password)
+        user = CustomUser.objects.create_user(email=email, password=password)
         return user
     
 
@@ -57,7 +62,7 @@ class VerifyEmailCodeSerializer(serializers.Serializer):
         except EmailVerificationCode.DoesNotExist:
             raise serializers.ValidationError("驗證碼錯誤")
         
-        if record.is_expired():
+        if record.is_expired(minutes=15):
             raise serializers.ValidationError("驗證碼已過期")
         
         data['record'] = record
@@ -75,22 +80,22 @@ class UserProfileSerializer(serializers.ModelSerializer):
         model = UserProfile
         fields = ['nickname', 'bio', 'gender', 'match_gender', 'preferred_age_min', 'preferred_age_max', 'photo', 'birth_info']
 
-        def validate_photo(self, image):
-            img = Image.open(image)
+    def validate_photo(self, image):
+        img = Image.open(image)
 
-            if img.mode in ("RGBA", "P"):
-                img = img.convert("RGB")
+        if img.mode in ("RGBA", "P"):
+            img = img.convert("RGB")
 
-            max_size = (1024, 1024)
-            img.thumbnail(max_size)
+        max_size = (1024, 1024)
+        img.thumbnail(max_size)
 
-            buffer = BytesIO()
-            img.save(buffer, format='JPEG', quality=70)
+        buffer = BytesIO()
+        img.save(buffer, format='JPEG', quality=70)
 
-            new_image = ContentFile(buffer.getvalue())
-            new_image.name = f"{image.name.split('.')[0]}.jpg"
+        new_image = ContentFile(buffer.getvalue())
+        new_image.name = f"{image.name.split('.')[0]}.jpg"
 
-            return new_image
+        return new_image
         
 class UserBirthInfoCreateUpdateSerializer(serializers.ModelSerializer):
     class Meta:
@@ -110,3 +115,9 @@ class UserBirthInfoCreateUpdateSerializer(serializers.ModelSerializer):
             setattr(instance, attr, value)
         instance.save()
         return instance
+    
+
+class PlanetPositionSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = PlanetPosition
+        fields = ['planet_name', 'zodiac_sign', 'degree', 'correct_degree', 'house']
