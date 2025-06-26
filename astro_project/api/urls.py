@@ -1,5 +1,5 @@
 from django.urls import path
-from .views import RegisterAPIView, VerifyEmailCodeAPIView, RequestEmailVerificationCodeView, UserProfileView, UserBirthInfoView, NatalChartView, MatchCandidatesView
+from .views import RegisterAPIView, VerifyEmailCodeAPIView, RequestEmailVerificationCodeView, UserProfileView, UserBirthInfoView, NatalChartView, MatchCandidatesView, MatchActionView
 from rest_framework_simplejwt.views import (
     TokenObtainPairView,
     TokenRefreshView,
@@ -16,5 +16,6 @@ urlpatterns = [
     path('birth-info/', UserBirthInfoView.as_view(), name='birth-info'),
     path('natal-chart/', NatalChartView.as_view(), name='natal-chart'),
     path('candidates/', MatchCandidatesView.as_view(), name='match-candidates'),
+    path('match/action/', MatchActionView.as_view(), name='match-action'),
 
 ]

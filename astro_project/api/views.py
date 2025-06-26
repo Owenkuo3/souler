@@ -15,8 +15,7 @@ from users.utils import get_lat_lng_by_city
 from astrology.service.chart_service import generate_chart_and_save
 from astrology.models import PlanetPosition
 from matching.service.matching_logic import get_matching_candidates
-from matching.models import MatchScore
-
+from matching.models import MatchScore, MatchAction
 
 #註冊
 class RegisterAPIView(APIView):
@@ -184,3 +183,41 @@ class MatchCandidatesView(APIView):
 
         return Response(data)
     
+class MatchActionView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request):
+        from_user = request.user.profile
+        to_user_id = request.data.get("to_user_id")
+        action = request.data.get("action")
+        
+        if action not in ['like', 'dislike']:
+            return Response({"detail": "無效的行為"}, status=400)
+
+        try:
+            to_user = UserProfile.objects.get(user__id=to_user_id)
+        except UserProfile.DoesNotExist:
+            return Response({"detail": "目標用戶不存在"}, status=404)
+
+        if from_user == to_user:
+            return Response({"detail": "不能對自己進行 like/dislike。"}, status=400)
+        
+        match_action, created = MatchAction.objects.get_or_create(
+            from_user=from_user,
+            to_user=to_user,
+            defaults={"action": action}
+        )
+
+        if not created:
+            return Response({"detail": "你已對此用戶操作過"}, status=400)
+
+        is_matched = MatchAction.objects.filter(
+            from_user=to_user,
+            to_user=from_user,
+            action='like'
+        ).exists()
+
+        return Response({
+            "detail": "操作成功",
+            "matched": is_matched 
+        }, status=201)
