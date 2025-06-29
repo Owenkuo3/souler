@@ -4,7 +4,7 @@ from rest_framework_simplejwt.views import (
     TokenObtainPairView,
     TokenRefreshView,
 )
-
+from .views import ChatRoomListView
 
 urlpatterns = [
     path('register/', RegisterAPIView.as_view(), name='register'),
@@ -17,5 +17,6 @@ urlpatterns = [
     path('natal-chart/', NatalChartView.as_view(), name='natal-chart'),
     path('candidates/', MatchCandidatesView.as_view(), name='match-candidates'),
     path('match/action/', MatchActionView.as_view(), name='match-action'),
+    path("chatrooms/", ChatRoomListView.as_view(), name="chatroom-list"),
 
 ]
