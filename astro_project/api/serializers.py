@@ -22,15 +22,16 @@ class RegisterSerializer(serializers.Serializer):
         password2 = data['password2']
 
         if password != password2:
-            raise serializers.ValidationError("兩次輸入的密碼不一致")
+            raise serializers.ValidationError({"password": "兩次輸入的密碼不一致"})
 
         try:
             record = EmailVerificationCode.objects.filter(email=email, is_verified=True).latest('created_at')
         except EmailVerificationCode.DoesNotExist:
-            raise serializers.ValidationError("請先完成 Email 驗證")
+            raise serializers.ValidationError({"email": "請先完成 Email 驗證"})
+
 
         if CustomUser.objects.filter(email=email).exists():
-            raise serializers.ValidationError("此 Email 已經註冊過")
+            raise serializers.ValidationError({"email": "此 Email 已經註冊過"})
         
         if record.is_expired(minutes=30):
             raise serializers.ValidationError("驗證過期，請重新驗證 Email")
