@@ -2,7 +2,7 @@ import random
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
-from .serializers import RegisterSerializer, VerifyEmailCodeSerializer, UserBirthInfoCreateUpdateSerializer, UserProfileSerializer, PlanetPositionSerializer
+from .serializers import RegisterSerializer, VerifyEmailCodeSerializer, UserBirthInfoCreateUpdateSerializer, UserProfileSerializer, PlanetPositionSerializer, SimpleUserProfileSerializer
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.decorators import api_view, permission_classes
 from .models import EmailVerificationCode
@@ -16,6 +16,9 @@ from astrology.service.chart_service import generate_chart_and_save
 from astrology.models import PlanetPosition
 from matching.service.matching_logic import get_matching_candidates
 from matching.models import MatchScore, MatchAction
+from chat.models import ChatRoom
+from django.db.models import Q
+
 
 #註冊
 class RegisterAPIView(APIView):
@@ -98,12 +101,12 @@ class UserBirthInfoView(APIView):
     permission_classes = [IsAuthenticated]
 
     def get(self, request):
-        try:
-            birth_info = request.user.profile.birth_info
-            serializer = UserBirthInfoCreateUpdateSerializer(birth_info)
-            return Response(serializer.data)
-        except UserBirthInfo.DoesNotExist:
+        birth_info = getattr(request.user.profile, 'birth_info', None)
+        if not birth_info:
             return Response({"detail": "尚未填寫出生資料"}, status=404)
+
+        serializer = UserBirthInfoCreateUpdateSerializer(birth_info)
+        return Response(serializer.data)
 
     def post(self, request):
         serializer = UserBirthInfoCreateUpdateSerializer(data=request.data, context={'request': request})
@@ -140,10 +143,8 @@ class UserBirthInfoView(APIView):
         if serializer.is_valid():
             updated_birth_info = serializer.save()
 
-            # 判斷是否有改動關鍵欄位（可選，也可以每次都重算）
             changed_fields = set(request.data.keys())
             if changed_fields & {'birth_year', 'birth_month', 'birth_day', 'birth_hour', 'birth_minute', 'birth_location'}:
-                # 🔁 重新取得經緯度
                 lat, lng = get_lat_lng_by_city(updated_birth_info.birth_location)
                 if lat and lng:
                     updated_birth_info.birth_latitude = lat
@@ -165,7 +166,8 @@ class NatalChartView(APIView):
     def get(self, request):
         user_profile = request.user.profile
         chart = PlanetPosition.objects.filter(user_profile=user_profile).order_by('planet_name')
-        serializer = PlanetPositionSerializer(chart, many=True)
+        serializer = PlanetPositionSerializer(
+            chart, many=True)
         return Response(serializer.data)
     
 class MatchCandidatesView(APIView):
@@ -199,7 +201,7 @@ class MatchActionView(APIView):
         except UserProfile.DoesNotExist:
             return Response({"detail": "目標用戶不存在"}, status=404)
 
-        if from_user == to_user:
+        if str(from_user.user.id) == str(to_user_id):
             return Response({"detail": "不能對自己進行 like/dislike。"}, status=400)
         
         match_action, created = MatchAction.objects.get_or_create(
@@ -217,7 +219,38 @@ class MatchActionView(APIView):
             action='like'
         ).exists()
 
+        if is_matched:
+            # 決定 user1 與 user2 的順序（用 id 決定，避免建立兩次聊天室）
+            user1 = min(from_user, to_user, key=lambda u: u.user.id)
+            user2 = max(from_user, to_user, key=lambda u: u.user.id)
+
+    # 建立聊天室（若尚未存在）
+        ChatRoom.objects.get_or_create(
+            user1=user1.user,
+            user2=user2.user
+        )
+
         return Response({
             "detail": "操作成功",
             "matched": is_matched 
         }, status=201)
+
+class ChatRoomListView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        user = request.user
+        rooms = ChatRoom.objects.filter(
+            Q(user1=user) | Q(user2=user)
+        ).prefetch_related('messages', 'user1__profile', 'user2__profile')
+        data = []
+
+        for room in rooms:
+            other_user = room.user2 if room.user1 == user else room.user1
+            data.append({
+                "room_id": room.id,
+                "matched_user": SimpleUserProfileSerializer(other_user).data,
+                "last_message_time": room.messages.last().timestamp if room.messages.exists() else None
+            })
+
+        return Response(data)

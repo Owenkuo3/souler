@@ -121,3 +121,8 @@ class PlanetPositionSerializer(serializers.ModelSerializer):
     class Meta:
         model = PlanetPosition
         fields = ['planet_name', 'zodiac_sign', 'degree', 'correct_degree', 'house']
+
+class SimpleUserProfileSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = UserProfile
+        fields = ["nickname", "avatar"]
