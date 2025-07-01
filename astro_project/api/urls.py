@@ -4,7 +4,7 @@ from rest_framework_simplejwt.views import (
     TokenObtainPairView,
     TokenRefreshView,
 )
-from .views import ChatRoomListView
+from .views import ChatRoomListView, ChatRoomMessageView
 
 urlpatterns = [
     path('register/', RegisterAPIView.as_view(), name='register'),
@@ -18,5 +18,6 @@ urlpatterns = [
     path('candidates/', MatchCandidatesView.as_view(), name='match-candidates'),
     path('match/action/', MatchActionView.as_view(), name='match-action'),
     path("chatrooms/", ChatRoomListView.as_view(), name="chatroom-list"),
+    path("chatrooms/<int:room_id>/messages/", ChatRoomMessageView.as_view(), name="chatroom-messages"),
 
 ]

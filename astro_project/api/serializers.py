@@ -9,6 +9,8 @@ from PIL import Image
 from io import BytesIO
 from django.core.files.base import ContentFile
 from astrology.models import PlanetPosition
+from chat.models import Message
+
 
 
 class RegisterSerializer(serializers.Serializer):
@@ -127,3 +129,10 @@ class SimpleUserProfileSerializer(serializers.ModelSerializer):
     class Meta:
         model = UserProfile
         fields = ["nickname", "avatar"]
+
+class MessageSerializer(serializers.ModelSerializer):
+    sender = serializers.StringRelatedField(read_only=True)
+
+    class Meta:
+        model = Message
+        fields = ['id', 'sender', 'content', 'timestamp']

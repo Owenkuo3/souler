@@ -2,7 +2,7 @@ import random
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
-from .serializers import RegisterSerializer, VerifyEmailCodeSerializer, UserBirthInfoCreateUpdateSerializer, UserProfileSerializer, PlanetPositionSerializer, SimpleUserProfileSerializer
+from .serializers import RegisterSerializer, VerifyEmailCodeSerializer, UserBirthInfoCreateUpdateSerializer, UserProfileSerializer, PlanetPositionSerializer, SimpleUserProfileSerializer, MessageSerializer
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.decorators import api_view, permission_classes
 from .models import EmailVerificationCode
@@ -18,7 +18,7 @@ from matching.service.matching_logic import get_matching_candidates
 from matching.models import MatchScore, MatchAction
 from chat.models import ChatRoom
 from django.db.models import Q
-
+from chat.models import Message
 
 #註冊
 class RegisterAPIView(APIView):
@@ -224,11 +224,10 @@ class MatchActionView(APIView):
             user1 = min(from_user, to_user, key=lambda u: u.user.id)
             user2 = max(from_user, to_user, key=lambda u: u.user.id)
 
-    # 建立聊天室（若尚未存在）
-        ChatRoom.objects.get_or_create(
-            user1=user1.user,
-            user2=user2.user
-        )
+            ChatRoom.objects.get_or_create(
+                user1=user1.user,
+                user2=user2.user
+            )
 
         return Response({
             "detail": "操作成功",
@@ -254,3 +253,43 @@ class ChatRoomListView(APIView):
             })
 
         return Response(data)
+    
+class ChatRoomMessageView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request, room_id):
+        user = request.user
+        try:
+            room = ChatRoom.objects.get(id=room_id)
+        except ChatRoom.DoesNotExist:
+            return Response({"detail": "聊天室不存在"}, status=404)
+
+        # 確保這個人是這個聊天室成員
+        if user != room.user1 and user != room.user2:
+            return Response({"detail": "你無權查看這個聊天室"}, status=403)
+
+        messages = room.messages.order_by('timestamp')
+        serializer = MessageSerializer(messages, many=True)
+        return Response(serializer.data)
+
+    def post(self, request, room_id):
+        user = request.user
+        content = request.data.get("content")
+        if not content:
+            return Response({"detail": "訊息不得為空"}, status=400)
+
+        try:
+            room = ChatRoom.objects.get(id=room_id)
+        except ChatRoom.DoesNotExist:
+            return Response({"detail": "聊天室不存在"}, status=404)
+
+        if user != room.user1 and user != room.user2:
+            return Response({"detail": "你無權傳送訊息"}, status=403)
+
+        message = Message.objects.create(
+            room=room,
+            sender=user,
+            content=content
+        )
+        serializer = MessageSerializer(message)
+        return Response(serializer.data, status=status.HTTP_201_CREATED)
