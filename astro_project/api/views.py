@@ -248,7 +248,7 @@ class ChatRoomListView(APIView):
             other_user = room.user2 if room.user1 == user else room.user1
             data.append({
                 "room_id": room.id,
-                "matched_user": SimpleUserProfileSerializer(other_user).data,
+                "matched_user": SimpleUserProfileSerializer(other_user.profile).data,
                 "last_message_time": room.messages.last().timestamp if room.messages.exists() else None
             })
 

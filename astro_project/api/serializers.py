@@ -128,7 +128,7 @@ class PlanetPositionSerializer(serializers.ModelSerializer):
 class SimpleUserProfileSerializer(serializers.ModelSerializer):
     class Meta:
         model = UserProfile
-        fields = ["nickname", "avatar"]
+        fields = ["nickname", "photo"]
 
 class MessageSerializer(serializers.ModelSerializer):
     sender = serializers.StringRelatedField(read_only=True)

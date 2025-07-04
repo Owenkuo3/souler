@@ -8,7 +8,7 @@ class UserProfileSerializer(serializers.ModelSerializer):
             'id',
             'nickname',
             'gender',
-            'avatar',
+            'photo',
             'bio',
             'birth_date',
             'birth_time',
