@@ -161,7 +161,8 @@ class UserBirthInfoView(APIView):
             return Response(serializer.data)
         
         return Response(serializer.errors, status=400)
-    
+
+#星盤展示
 class NatalChartView(APIView):
     permission_classes = [IsAuthenticated]
 
@@ -172,6 +173,7 @@ class NatalChartView(APIView):
             chart, many=True)
         return Response(serializer.data)
     
+#配對邏輯API
 class MatchCandidatesView(APIView):
     permission_classes = [IsAuthenticated]
 
@@ -186,7 +188,8 @@ class MatchCandidatesView(APIView):
             data.append(profile_data)
 
         return Response(data)
-    
+
+#配對動作
 class MatchActionView(APIView):
     permission_classes = [IsAuthenticated]
 
