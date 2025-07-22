@@ -53,7 +53,7 @@ INSTALLED_APPS = [
     'chat',
     'api',
     'rest_framework',
-
+    'channels',
 ]
 
 MIDDLEWARE = [
@@ -158,3 +158,4 @@ SIMPLE_JWT = {
     'ACCESS_TOKEN_LIFETIME': timedelta(days=7),  # 預設是5分鐘，改成7天
     'REFRESH_TOKEN_LIFETIME': timedelta(days=30),
 }
+ASGI_APPLICATION = 'astro_project.asgi.application'

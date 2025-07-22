@@ -70,6 +70,7 @@ class VerifyEmailCodeAPIView(APIView):
             return Response({"message": "驗證成功"}, status=status.HTTP_200_OK)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
+#更新userprofile資料
 class UserProfileView(APIView):
     permission_classes = [IsAuthenticated]
     parser_classes = [MultiPartParser, FormParser, JSONParser]
@@ -97,6 +98,7 @@ class UserProfileView(APIView):
             return Response(serializer.data)
         return Response(serializer.errors, status=400)
     
+#更新user出生地/日期
 class UserBirthInfoView(APIView):
     permission_classes = [IsAuthenticated]
 
