@@ -9,3 +9,7 @@ services:
       - "8000:8000"
     environment:
      - PYTHONUNBUFFERED=1
+  redis:
+    image: redis:7
+    ports:
+      - "6379:6379"
