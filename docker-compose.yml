@@ -1,14 +1,16 @@
 services:
   web:
     build: .
-    command: python manage.py runserver 0.0.0.0:8000
+    command: daphne -b 0.0.0.0 -p 8000 astro_project.asgi:application
     working_dir: /app/astro_project
     volumes:
       - .:/app
     ports:
       - "8000:8000"
     environment:
-     - PYTHONUNBUFFERED=1
+      - PYTHONUNBUFFERED=1
+      - DJANGO_SETTINGS_MODULE=astro_project.settings
+
   redis:
     image: redis:7
     ports:

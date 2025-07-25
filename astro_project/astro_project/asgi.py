@@ -6,20 +6,25 @@ It exposes the ASGI callable as a module-level variable named ``application``.
 For more information on this file, see
 https://docs.djangoproject.com/en/5.2/howto/deployment/asgi/
 """
-
 import os
 from django.core.asgi import get_asgi_application
 from channels.routing import ProtocolTypeRouter, URLRouter
-from channels.auth import AuthMiddlewareStack
-import chat.routing  # 👈 等下會建立這個檔案
+import chat.routing
+
+
 
 os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'astro_project.settings')
 
+# 先初始化 Django（這行會完成 AppRegistry 的初始化）
+django_asgi_app = get_asgi_application()
+
+from .middleware import JWTAuthMiddleware
+
 application = ProtocolTypeRouter({
-    "http": get_asgi_application(),  # 還是支援原本的 HTTP
-    "websocket": AuthMiddlewareStack(
+    "http": django_asgi_app,  # 原本的 HTTP 支援
+    "websocket": JWTAuthMiddleware(
         URLRouter(
-            chat.routing.websocket_urlpatterns  # 👈 對應聊天室 WebSocket 的入口
+            chat.routing.websocket_urlpatterns
         )
     ),
 })

@@ -20,8 +20,15 @@ RUN apt-get update && apt-get install -y \
     pkg-config \
     && rm -rf /var/lib/apt/lists/*
 
-# 複製專案檔案
+
 COPY . /app
 
 # 安裝 Python 套件
 RUN pip install --upgrade pip && pip install -r requirements.txt
+
+ENV DJANGO_SETTINGS_MODULE=astro_project.settings
+
+WORKDIR /app/astro_project
+
+RUN python manage.py collectstatic --noinput
+
