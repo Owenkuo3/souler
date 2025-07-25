@@ -12,7 +12,6 @@ from channels.routing import ProtocolTypeRouter, URLRouter
 import chat.routing
 
 
-
 os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'astro_project.settings')
 
 # 先初始化 Django（這行會完成 AppRegistry 的初始化）
