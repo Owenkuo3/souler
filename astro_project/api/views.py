@@ -2,7 +2,7 @@ import random
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
-from .serializers import RegisterSerializer, VerifyEmailCodeSerializer, UserBirthInfoCreateUpdateSerializer, UserProfileSerializer, PlanetPositionSerializer, SimpleUserProfileSerializer, MessageSerializer
+from .serializers import RegisterSerializer, VerifyEmailCodeSerializer, UserBirthInfoCreateUpdateSerializer, UserProfileSerializer, PlanetPositionSerializer, SimpleUserProfileSerializer, MessageSerializer, MyTokenObtainPairSerializer
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.decorators import api_view, permission_classes
 from .models import EmailVerificationCode
@@ -19,6 +19,7 @@ from matching.models import MatchScore, MatchAction
 from chat.models import ChatRoom
 from django.db.models import Q
 from chat.models import Message
+from rest_framework_simplejwt.views import TokenObtainPairView
 
 #註冊
 class RegisterAPIView(APIView):
@@ -300,3 +301,6 @@ class ChatRoomMessageView(APIView):
         )
         serializer = MessageSerializer(message)
         return Response(serializer.data, status=status.HTTP_201_CREATED)
+    
+class MyTokenObtainPairView(TokenObtainPairView):
+    serializer_class = MyTokenObtainPairSerializer

@@ -158,9 +158,14 @@ EMAIL_HOST_USER = 'noreply@yourapp.com'  # 顯示寄件人
 AUTH_USER_MODEL = 'accounts.CustomUser'
 
 SIMPLE_JWT = {
+    'USER_ID_FIELD': 'id',
+    'USER_ID_CLAIM': 'user_id',
     'ACCESS_TOKEN_LIFETIME': timedelta(days=7),  # 預設是5分鐘，改成7天
     'REFRESH_TOKEN_LIFETIME': timedelta(days=30),
+    'AUTH_TOKEN_CLASSES': ('rest_framework_simplejwt.tokens.AccessToken',),
+    'TOKEN_OBTAIN_SERIALIZER': 'api.serializers.MyTokenObtainPairSerializer',
 }
+
 ASGI_APPLICATION = 'astro_project.asgi.application'
 
 CHANNEL_LAYERS = {
@@ -171,3 +176,5 @@ CHANNEL_LAYERS = {
         },
     },
 }
+
+

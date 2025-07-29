@@ -10,6 +10,7 @@ from io import BytesIO
 from django.core.files.base import ContentFile
 from astrology.models import PlanetPosition
 from chat.models import Message
+from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
 
 
 
@@ -136,3 +137,11 @@ class MessageSerializer(serializers.ModelSerializer):
     class Meta:
         model = Message
         fields = ['id', 'sender', 'content', 'timestamp']
+
+
+class MyTokenObtainPairSerializer(TokenObtainPairSerializer):
+    @classmethod
+    def get_token(cls, user):
+        token = super().get_token(user)
+        token['email'] = user.email  # ✅ 把 email 放進去
+        return token

@@ -59,15 +59,16 @@ class ChatConsumer(AsyncWebsocketConsumer):
             {
                 'type': 'chat_message',
                 'message': message.content,
-                'sender': nickname,
+                'sender_id': real_user.id,
+                'sender_nickname': nickname,
                 'timestamp': message.timestamp.strftime('%Y-%m-%d %H:%M:%S'),
             }
         )
 
     async def chat_message(self, event):
-        # 傳送到前端
         await self.send(text_data=json.dumps({
             'message': event['message'],
-            'sender': event['sender'],
+            'sender_id': event['sender_id'],
+            'sender_nickname': event['sender_nickname'],
             'timestamp': event['timestamp'],
         }))
