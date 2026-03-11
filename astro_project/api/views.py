@@ -149,7 +149,7 @@ class UserBirthInfoView(APIView):
             changed_fields = set(request.data.keys())
             if changed_fields & {'birth_year', 'birth_month', 'birth_day', 'birth_hour', 'birth_minute', 'birth_location'}:
                 lat, lng = get_lat_lng_by_city(updated_birth_info.birth_location)
-                if lat and lng:
+                if lat is not None and lng is not None:
                     updated_birth_info.birth_latitude = lat
                     updated_birth_info.birth_longitude = lng
                     updated_birth_info.save()
