@@ -19,7 +19,7 @@ class UserBirthInfo(models.Model):
         return f"{self.user_profile.nickname} 的出生資訊"
     
     def save(self, *args, **kwargs):
-        if self.birth_location and not self.birth_latitude:
+        if self.birth_location and self.birth_latitude is None:
             lat, lon = get_lat_lng_by_city(self.birth_location)
             self.birth_latitude = lat
             self.birth_longitude = lon

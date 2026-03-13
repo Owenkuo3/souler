@@ -106,8 +106,16 @@ class UserBirthInfoCreateUpdateSerializer(serializers.ModelSerializer):
         model = UserBirthInfo
         exclude = ['id']
         extra_kwargs = {
-            'user_profile': {'read_only': True}
+            'user_profile': {'read_only': True},
+            'birth_location': {'allow_null': False, 'allow_blank': False},
         }
+
+    def validate(self, attrs):
+        if self.instance is None and not attrs.get('birth_location'):
+            raise serializers.ValidationError({
+                'birth_location': '此欄位為必填。'
+            })
+        return attrs
 
     def create(self, validated_data):
         user = self.context['request'].user
