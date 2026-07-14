@@ -165,6 +165,7 @@ AUTH_USER_MODEL = 'accounts.CustomUser'
 SIMPLE_JWT = {
     'USER_ID_FIELD': 'id',
     'USER_ID_CLAIM': 'user_id',
+    'UPDATE_LAST_LOGIN': True,  # 配對候選過濾依賴 last_login，JWT 登入也要更新
     'ACCESS_TOKEN_LIFETIME': timedelta(days=7),  # 預設是5分鐘，改成7天
     'REFRESH_TOKEN_LIFETIME': timedelta(days=30),
     'AUTH_TOKEN_CLASSES': ('rest_framework_simplejwt.tokens.AccessToken',),

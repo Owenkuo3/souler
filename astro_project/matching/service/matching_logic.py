@@ -2,7 +2,7 @@ from accounts.models import UserProfile
 from django.utils import timezone
 from datetime import timedelta
 from matching.service.aspect_matching import calculate_match_score
-from matching.models import MatchScore
+from matching.models import MatchScore, MatchAction
 
 
 def get_matching_candidates(user, top_n=10):
@@ -15,6 +15,13 @@ def get_matching_candidates(user, top_n=10):
 
     one_week_ago = timezone.now() - timedelta(days=7)
     candidates = candidates.filter(user__last_login__gte=one_week_ago)
+
+    # 沒有出生資料就沒有星盤，無法計算契合度
+    candidates = candidates.exclude(birth_info=None)
+
+    # 排除已經 like/dislike 過的對象
+    swiped_ids = MatchAction.objects.filter(from_user=my_profile).values_list('to_user_id', flat=True)
+    candidates = candidates.exclude(id__in=swiped_ids)
 
     scored_candidates = []
     for candidate in candidates:

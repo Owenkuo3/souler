@@ -187,14 +187,36 @@ class MatchCandidatesView(APIView):
     permission_classes = [IsAuthenticated]
 
     def get(self, request):
+        from datetime import date
+
         user = request.user
         candidates = get_matching_candidates(user, top_n=10)
 
+        today = date.today()
         data = []
         for item in candidates:
-            profile_data = UserProfileSerializer(item['userprofile']).data
-            profile_data['match_score'] = item['score']
-            data.append(profile_data)
+            profile = item['userprofile']
+
+            birth = getattr(profile, 'birth_info', None)
+            age = None
+            if birth:
+                age = today.year - birth.birth_year - (
+                    (today.month, today.day) < (birth.birth_month, birth.birth_day)
+                )
+
+            sun = PlanetPosition.objects.filter(
+                user_profile=profile, planet_name='太陽'
+            ).first()
+
+            data.append({
+                'user_id': profile.user.id,
+                'nickname': profile.nickname,
+                'bio': profile.bio,
+                'photo': profile.photo.url if profile.photo else None,
+                'age': age,
+                'sun_sign': sun.zodiac_sign if sun else None,
+                'match_score': item['score'],
+            })
 
         return Response(data)
 
@@ -233,19 +255,22 @@ class MatchActionView(APIView):
             action='like'
         ).exists()
 
+        room = None
         if is_matched:
             # 決定 user1 與 user2 的順序（用 id 決定，避免建立兩次聊天室）
             user1 = min(from_user, to_user, key=lambda u: u.user.id)
             user2 = max(from_user, to_user, key=lambda u: u.user.id)
 
-            ChatRoom.objects.get_or_create(
+            room, _ = ChatRoom.objects.get_or_create(
                 user1=user1.user,
                 user2=user2.user
             )
 
         return Response({
             "detail": "操作成功",
-            "matched": is_matched 
+            "matched": is_matched,
+            "room_id": room.id if room else None,
+            "matched_nickname": to_user.nickname if is_matched else None,
         }, status=201)
 
 class ChatRoomListView(APIView):
