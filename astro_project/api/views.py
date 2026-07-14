@@ -11,7 +11,7 @@ from datetime import timedelta
 from accounts.models import UserProfile
 from rest_framework.parsers import MultiPartParser, FormParser, JSONParser
 from users.models import UserBirthInfo
-from users.utils import get_lat_lng_by_city
+from users.utils import get_lat_lng_by_city, city_name_mapping
 from astrology.service.chart_service import generate_chart_and_save
 from astrology.models import PlanetPosition
 from matching.service.matching_logic import get_matching_candidates
@@ -112,8 +112,11 @@ class UserBirthInfoView(APIView):
         return Response(serializer.data)
 
     def post(self, request):
+        if getattr(request.user.profile, 'birth_info', None):
+            return Response({"detail": "出生資料已存在，請改用 PATCH 更新"}, status=400)
+
         serializer = UserBirthInfoCreateUpdateSerializer(data=request.data, context={'request': request})
-        
+
         if serializer.is_valid():
             birth_info = serializer.save()
 
@@ -162,6 +165,11 @@ class UserBirthInfoView(APIView):
             return Response(serializer.data)
         
         return Response(serializer.errors, status=400)
+
+#支援的出生地城市清單（前端下拉選單用）
+class CityListView(APIView):
+    def get(self, request):
+        return Response({"cities": list(city_name_mapping.keys())})
 
 #星盤展示
 class NatalChartView(APIView):

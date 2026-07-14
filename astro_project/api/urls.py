@@ -1,5 +1,5 @@
 from django.urls import path
-from .views import RegisterAPIView, VerifyEmailCodeAPIView, RequestEmailVerificationCodeView, UserProfileView, UserBirthInfoView, NatalChartView, MatchCandidatesView, MatchActionView
+from .views import RegisterAPIView, VerifyEmailCodeAPIView, RequestEmailVerificationCodeView, UserProfileView, UserBirthInfoView, NatalChartView, MatchCandidatesView, MatchActionView, CityListView
 from rest_framework_simplejwt.views import TokenRefreshView
 from .views import ChatRoomListView, ChatRoomMessageView, MyTokenObtainPairView
 
@@ -11,6 +11,7 @@ urlpatterns = [
     path('token/refresh/', TokenRefreshView.as_view(), name='token_refresh'), 
     path('user/profile/', UserProfileView.as_view(), name='update_user_profile'),
     path('birth-info/', UserBirthInfoView.as_view(), name='birth-info'),
+    path('cities/', CityListView.as_view(), name='city-list'),
     path('natal-chart/', NatalChartView.as_view(), name='natal-chart'),
     path('candidates/', MatchCandidatesView.as_view(), name='match-candidates'),
     path('match/action/', MatchActionView.as_view(), name='match-action'),
