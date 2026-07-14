@@ -4,10 +4,10 @@ pyswisseph==2.10.3.2
 matplotlib>=3.7,<4.0
 djangorestframework>=3.16.0
 djangorestframework-simplejwt>=5.3.1
-Pillow>=9.0
 pytest>=8.2.0
 pytest-django>=4.8.0
 channels==4.0.0
 channels_redis
 daphne>=4.0
 whitenoise
+django-cors-headers>=4.0
