@@ -10,6 +10,7 @@ services:
     environment:
       - PYTHONUNBUFFERED=1
       - DJANGO_SETTINGS_MODULE=astro_project.settings
+      - REDIS_HOST=redis
 
   redis:
     image: redis:7

@@ -276,8 +276,6 @@ class ChatRoomMessageView(APIView):
 
         messages = room.messages.order_by('timestamp')
         serializer = MessageSerializer(messages, many=True)
-        print('🔥 DEBUG: ChatRoom List JSON：', serializer.data)
-
         return Response(serializer.data)
 
     def post(self, request, room_id):

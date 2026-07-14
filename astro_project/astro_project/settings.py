@@ -168,13 +168,24 @@ SIMPLE_JWT = {
 
 ASGI_APPLICATION = 'astro_project.asgi.application'
 
-CHANNEL_LAYERS = {
-    "default": {
-        "BACKEND": "channels_redis.core.RedisChannelLayer",
-        "CONFIG": {
-            "hosts": [("redis", 6379)],
+# 有設 REDIS_HOST 環境變數（Docker / 正式環境）才用 Redis，
+# 本機開發不裝 Redis 也能跑，WebSocket 廣播改用單進程的 InMemory layer
+REDIS_HOST = os.environ.get("REDIS_HOST")
+
+if REDIS_HOST:
+    CHANNEL_LAYERS = {
+        "default": {
+            "BACKEND": "channels_redis.core.RedisChannelLayer",
+            "CONFIG": {
+                "hosts": [(REDIS_HOST, int(os.environ.get("REDIS_PORT", 6379)))],
+            },
         },
-    },
-}
+    }
+else:
+    CHANNEL_LAYERS = {
+        "default": {
+            "BACKEND": "channels.layers.InMemoryChannelLayer",
+        },
+    }
 
 

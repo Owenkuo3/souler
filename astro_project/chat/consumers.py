@@ -7,7 +7,6 @@ class ChatConsumer(AsyncWebsocketConsumer):
     async def connect(self):
         self.room_id = self.scope['url_route']['kwargs']['room_id']
         self.room_group_name = f'chat_{self.room_id}'
-        print(f"🔒 接收到 user: {self.scope['user']}")
         # 加入聊天室 group
         await self.channel_layer.group_add(
             self.room_group_name,
@@ -53,22 +52,24 @@ class ChatConsumer(AsyncWebsocketConsumer):
         # 拿使用者暱稱（從 UserProfile）
         nickname = await database_sync_to_async(lambda: user.profile.nickname)()
 
-        # 廣播給群組
+        # 廣播給群組（欄位格式與 REST 的 MessageSerializer 一致：id / sender / content / timestamp）
         await self.channel_layer.group_send(
             self.room_group_name,
             {
                 'type': 'chat_message',
-                'message': message.content,
-                'sender_id': real_user.id,
+                'id': message.id,
+                'sender': real_user.id,
                 'sender_nickname': nickname,
-                'timestamp': message.timestamp.strftime('%Y-%m-%d %H:%M:%S'),
+                'content': message.content,
+                'timestamp': message.timestamp.isoformat(),
             }
         )
 
     async def chat_message(self, event):
         await self.send(text_data=json.dumps({
-            'message': event['message'],
-            'sender_id': event['sender_id'],
+            'id': event['id'],
+            'sender': event['sender'],
             'sender_nickname': event['sender_nickname'],
+            'content': event['content'],
             'timestamp': event['timestamp'],
         }))

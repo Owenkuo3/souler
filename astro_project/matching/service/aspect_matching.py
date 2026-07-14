@@ -17,12 +17,13 @@ ASPECTS = [
 ]
 
 # 行星權重（主星 → 外行星）
+# 鍵必須與 PlanetPosition.planet_name 存的中文名一致（見 users/utils.py 的 planet_names）
 PLANET_WEIGHTS = {
-    "Sun": 1.5, "Moon": 1.5,
-    "Mercury": 1.0, "Venus": 1.2, "Mars": 1.2,
-    "Jupiter": 0.8, "Saturn": 0.8,
-    "Uranus": 0.5, "Neptune": 0.5, "Pluto": 0.5,
-    "Asc": 1.5, "Desc": 1.5, "MC": 1.0, "IC": 1.0,  # 若你納入軸點可補上
+    "太陽": 1.5, "月亮": 1.5,
+    "水星": 1.0, "金星": 1.2, "火星": 1.2,
+    "木星": 0.8, "土星": 0.8,
+    "天王星": 0.5, "海王星": 0.5, "冥王星": 0.5,
+    "上升": 1.5, "下降": 1.5, "天頂": 1.0, "天底": 1.0,
 }
 
 def get_user_planets(user_profile):
@@ -49,7 +50,8 @@ def calculate_match_score(user_a_profile, user_b_profile):
 
     for pa in planets_a:
         for pb in planets_b:
-            aspect = calculate_aspect(pa.correct_degree, pb.correct_degree)
+            # 相位要用完整黃道度數 (0-360) 計算；correct_degree 是星座內度數 (0-30)，只能用於顯示
+            aspect = calculate_aspect(pa.degree, pb.degree)
             if aspect:
                 base_score = aspect["score"]
                 weight = (get_planet_weight(pa.planet_name) + get_planet_weight(pb.planet_name)) / 2

@@ -140,7 +140,8 @@ class SimpleUserProfileSerializer(serializers.ModelSerializer):
         fields = ["nickname", "photo"]
 
 class MessageSerializer(serializers.ModelSerializer):
-    sender = serializers.StringRelatedField(read_only=True)
+    # sender 回傳 user id（整數），與 WebSocket 廣播格式一致，前端才能判斷訊息是不是自己發的
+    sender = serializers.PrimaryKeyRelatedField(read_only=True)
 
     class Meta:
         model = Message
