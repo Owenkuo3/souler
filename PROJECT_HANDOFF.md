@@ -2,6 +2,13 @@
 
 > 最後更新：2026-07-15（第二版：使用者 iPhone 實測回饋後的迭代）。
 
+## 0-1. 聊天即時性收尾（2026-07-15 下午）
+- 已讀/未讀完成：`Message.is_read`、`POST /chatrooms/<id>/read/`（標已讀+廣播 read 事件）、列表 `unread_count`、前端已讀標記與未讀徽章
+- 聊天強韌化：聊天室標題旁連線狀態點（綠=WS 即時、橘=輪詢中）；WS 斷線自動改 5 秒輪詢（id 去重），訊息保證必達
+- 使用者實測確認：即時訊息/已讀/時間戳全部正常；偶發 5-10 秒延遲=免費層特性（共享 CPU、Neon 休眠喚醒、WS 短暫掉線由輪詢補）— 使用者接受，非功能性優化留待後續驗收
+- 曾發生的部署事故（供借鑑）：重建服務時 DATABASE_URL 沒設 → API 靜默退回 ephemeral sqlite（資料會隨部署消失）。診斷法：透過 API 寫入資料後直接查 Neon 看有沒有進去
+- 下一步：AI 解盤功能（等使用者提供 ANTHROPIC_API_KEY 到 Render 環境變數）；已討論定價（合盤單點 ~US$3、個人盤低價/免費當鉤子）；樂觀渲染送訊（提過但暫緩）
+
 ## 0. 最新一輪變更（回應實測回饋）
 - **lag 根因**：render.yaml 原漏設 region（預設 Oregon）與新加坡 Neon 跨太平洋 → 已改 `region: singapore`，**需在 Render 刪除 souler-api 與 souler-redis 後 Manual sync 重建**（region 不能原地改）；重建時要重貼 DATABASE_URL
 - **聊天吃訊息**：發送改走 REST（失敗還原輸入框）、後端寫入後 channel layer 廣播、前端以訊息 id 去重；泡泡加 HH:mm 時間戳
