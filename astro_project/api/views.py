@@ -146,20 +146,37 @@ class UserBirthInfoView(APIView):
         return Response(serializer.errors, status=400)
 
     def patch(self, request):
+        from datetime import timedelta
+        from django.utils import timezone
+
         try:
             birth_info = request.user.profile.birth_info
         except UserBirthInfo.DoesNotExist:
             return Response({"detail": "尚未填寫出生資料"}, status=404)
 
+        CHART_FIELDS = {'birth_year', 'birth_month', 'birth_day', 'birth_hour', 'birth_minute', 'birth_location'}
+        changes_chart = bool(set(request.data.keys()) & CHART_FIELDS)
+
+        # 修改限制：前 3 次免費，之後每 30 天限改一次
+        if changes_chart and birth_info.chart_edit_count >= 3:
+            if birth_info.last_chart_edit_at:
+                elapsed = timezone.now() - birth_info.last_chart_edit_at
+                if elapsed < timedelta(days=30):
+                    days_left = 30 - elapsed.days
+                    return Response(
+                        {"detail": f"出生資料修改已達免費上限，還要等 {days_left} 天才能再次修改"},
+                        status=403,
+                    )
+
         serializer = UserBirthInfoCreateUpdateSerializer(
             birth_info, data=request.data, partial=True, context={'request': request}
         )
-        
+
         if serializer.is_valid():
             updated_birth_info = serializer.save()
 
             changed_fields = set(request.data.keys())
-            if changed_fields & {'birth_year', 'birth_month', 'birth_day', 'birth_hour', 'birth_minute', 'birth_location'}:
+            if changed_fields & CHART_FIELDS:
                 lat, lng = get_lat_lng_by_city(updated_birth_info.birth_location)
                 if lat is not None and lng is not None:
                     updated_birth_info.birth_latitude = lat
@@ -170,6 +187,10 @@ class UserBirthInfoView(APIView):
                     generate_chart_and_save(request.user.profile, updated_birth_info)
                 except Exception as e:
                     return Response({"error": f"星盤更新失敗：{str(e)}"}, status=500)
+
+                updated_birth_info.chart_edit_count += 1
+                updated_birth_info.last_chart_edit_at = timezone.now()
+                updated_birth_info.save(update_fields=['chart_edit_count', 'last_chart_edit_at'])
 
             return Response(serializer.data)
         
@@ -185,11 +206,23 @@ class NatalChartView(APIView):
     permission_classes = [IsAuthenticated]
 
     def get(self, request):
+        from users.utils import get_house_cusps
+
         user_profile = request.user.profile
         chart = PlanetPosition.objects.filter(user_profile=user_profile).order_by('planet_name')
-        serializer = PlanetPositionSerializer(
-            chart, many=True)
-        return Response(serializer.data)
+        serializer = PlanetPositionSerializer(chart, many=True)
+
+        # 宮頭度數即時計算（前端畫宮位分隔線用）
+        cusps = []
+        birth = getattr(user_profile, 'birth_info', None)
+        if birth and birth.birth_latitude is not None and birth.birth_longitude is not None:
+            cusps = get_house_cusps(
+                birth.birth_year, birth.birth_month, birth.birth_day,
+                birth.birth_hour, birth.birth_minute,
+                float(birth.birth_latitude), float(birth.birth_longitude),
+            )
+
+        return Response({'planets': serializer.data, 'house_cusps': cusps})
     
 #配對邏輯API
 class MatchCandidatesView(APIView):

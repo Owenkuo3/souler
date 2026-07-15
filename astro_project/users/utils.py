@@ -40,6 +40,7 @@ def calculate_full_chart(year, month, day, hour, minute, latitude, longitude):
             "度數": round(degree, 4),
             "星座": signs[zodiac_sign],
             "宮位": house,
+            "逆行": planet_pos[3] < 0,  # 黃經速度為負即逆行
         }
 
     # 加入上升、下降、天頂、天底
@@ -82,6 +83,16 @@ def get_house_from_degree(degree, cusps):
             return i + 1
     return 12  # fallback
 
+
+
+def get_house_cusps(year, month, day, hour, minute, latitude, longitude):
+    """回傳 12 個宮頭黃道度數（Placidus），供前端畫宮位分隔線。"""
+    local_dt = datetime(year, month, day, hour, minute)
+    utc_dt = local_dt - timedelta(hours=8)
+    utc_hour_float = utc_dt.hour + utc_dt.minute / 60 + utc_dt.second / 3600
+    jd = swe.julday(utc_dt.year, utc_dt.month, utc_dt.day, utc_hour_float)
+    cusps, _ = swe.houses(jd, latitude, longitude, b'P')
+    return [round(c, 4) for c in cusps[:12]]
 
 
 def get_lat_lng_by_city(city_name):

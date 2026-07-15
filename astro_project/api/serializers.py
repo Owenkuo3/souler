@@ -108,6 +108,8 @@ class UserBirthInfoCreateUpdateSerializer(serializers.ModelSerializer):
         extra_kwargs = {
             'user_profile': {'read_only': True},
             'birth_location': {'allow_null': False, 'allow_blank': False},
+            'chart_edit_count': {'read_only': True},
+            'last_chart_edit_at': {'read_only': True},
         }
 
     def validate(self, attrs):
@@ -132,7 +134,7 @@ class UserBirthInfoCreateUpdateSerializer(serializers.ModelSerializer):
 class PlanetPositionSerializer(serializers.ModelSerializer):
     class Meta:
         model = PlanetPosition
-        fields = ['planet_name', 'zodiac_sign', 'degree', 'correct_degree', 'house']
+        fields = ['planet_name', 'zodiac_sign', 'degree', 'correct_degree', 'house', 'is_retrograde']
 
 class SimpleUserProfileSerializer(serializers.ModelSerializer):
     class Meta:

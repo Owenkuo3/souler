@@ -37,4 +37,5 @@ def generate_chart_and_save(user_profile, birth_info):
             degree=degree,  # 原始度數
             correct_degree=correct_degree,  # 修正後的度數
             house=house,  # 如果 '宮位' 為 None，則存入 None
+            is_retrograde=data.get('逆行', False),
         )

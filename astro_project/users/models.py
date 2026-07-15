@@ -15,6 +15,11 @@ class UserBirthInfo(models.Model):
     birth_longitude = models.DecimalField(max_digits=9, decimal_places=6, blank=True, null=True)
     birth_location = models.CharField(max_length=100, blank=True, null=True)
 
+    # 出生資料修改限制：前 3 次免費（很多人一開始不確定出生時間），
+    # 之後每 30 天限改一次，防止靠改生辰刷新配對池／消耗星盤計算資源
+    chart_edit_count = models.PositiveIntegerField(default=0)
+    last_chart_edit_at = models.DateTimeField(null=True, blank=True)
+
     def __str__(self):
         return f"{self.user_profile.nickname} 的出生資訊"
     
