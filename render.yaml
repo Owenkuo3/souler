@@ -28,9 +28,20 @@ services:
           type: keyvalue
           name: souler-redis
           property: connectionString
+      - key: CORS_ALLOWED_ORIGINS
+        value: https://souler-web.onrender.com
 
   - type: keyvalue
     name: souler-redis
     plan: free
     maxmemoryPolicy: allkeys-lru
     ipAllowList: []
+
+  # 網頁版前端（Flutter Web 靜態站；建置時自行下載 Flutter SDK）
+  - type: web
+    name: souler-web
+    runtime: static
+    repo: https://github.com/Owenkuo3/souler_fe
+    branch: main
+    buildCommand: git clone --depth 1 -b stable https://github.com/flutter/flutter.git _flutter && ./_flutter/bin/flutter build web --release --dart-define=API_HOST=souler-api.onrender.com --dart-define=API_SECURE=true
+    staticPublishPath: build/web

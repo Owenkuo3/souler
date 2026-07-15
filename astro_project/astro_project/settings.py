@@ -173,8 +173,11 @@ MEDIA_ROOT = BASE_DIR / 'media'
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
-# 開發用：允許所有來源（Flutter Web 在瀏覽器跑會有跨域限制）。上線前要改成白名單。
+# CORS：開發模式全開；正式環境只允許 CORS_ALLOWED_ORIGINS 列出的網頁版來源
 CORS_ALLOW_ALL_ORIGINS = DEBUG
+CORS_ALLOWED_ORIGINS = [
+    o for o in os.environ.get('CORS_ALLOWED_ORIGINS', '').split(',') if o
+]
 
 # 有設 EMAIL_HOST（SMTP 服務，如 Resend/Brevo）就真的寄信，否則印在 console
 if os.environ.get('EMAIL_HOST'):
