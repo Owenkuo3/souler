@@ -14,10 +14,18 @@ class MatchScore(models.Model):
     # 儲存相位詳細資料，例如 [{"planet_a": "Mars", "planet_b": "Venus", "aspect": "Trine", "score": +3}, ...]
 
     ai_interpretation = models.TextField(null=True, blank=True)
-    # 未來你可以存在這裡（付費解鎖後才顯示）
+    # 合盤 AI 解說快取（一對配對只生成一次，雙方共用）
 
     is_ai_unlocked = models.BooleanField(default=False)
-    # 是否已解鎖 AI 解說（未來付費功能可用）
+    # 是否已解鎖 AI 合盤解說（限時免費階段點擊即解鎖；點擊數 = 付費意願訊號）
+
+    ai_unlocked_at = models.DateTimeField(null=True, blank=True)
+    # 第一次點「解鎖」的時間（假門數據：看到原價後仍點擊的時間點）
+
+    ai_generated_at = models.DateTimeField(null=True, blank=True)
+    # 解說成功生成的時間（納入每日 AI 生成上限的計數）
+
+    ai_model_used = models.CharField(max_length=64, null=True, blank=True)
 
     created_at = models.DateTimeField(auto_now_add=True)
 

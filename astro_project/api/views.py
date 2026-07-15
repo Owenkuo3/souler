@@ -225,6 +225,21 @@ class NatalChartView(APIView):
         return Response({'planets': serializer.data, 'house_cusps': cusps})
     
 #AI 星盤解說（免費）：GET 取得既有解說，POST 生成
+def _daily_ai_cap_reached():
+    """個人解說＋合盤解說共用同一個每日生成上限（DAILY_INTERPRETATION_CAP）。"""
+    import os as _os
+    from django.utils import timezone as _tz
+    from astrology.models import ChartInterpretation
+
+    daily_cap = int(_os.environ.get('DAILY_INTERPRETATION_CAP', '100'))
+    today = _tz.now().date()
+    today_count = (
+        ChartInterpretation.objects.filter(created_at__date=today).count()
+        + MatchScore.objects.filter(ai_generated_at__date=today).count()
+    )
+    return today_count >= daily_cap
+
+
 class ChartInterpretationView(APIView):
     permission_classes = [IsAuthenticated]
 
@@ -257,13 +272,7 @@ class ChartInterpretationView(APIView):
             return Response({"detail": "請先填寫出生資料產生星盤"}, status=400)
 
         # 全域斷路器：每日生成上限，防止被批量假帳號惡意消耗 AI 額度
-        import os as _os
-        from django.utils import timezone as _tz
-        daily_cap = int(_os.environ.get('DAILY_INTERPRETATION_CAP', '100'))
-        today_count = ChartInterpretation.objects.filter(
-            created_at__date=_tz.now().date()
-        ).count()
-        if today_count >= daily_cap:
+        if _daily_ai_cap_reached():
             return Response({"detail": "今日 AI 解說名額已滿，請明天再來"}, status=429)
 
         try:
@@ -277,6 +286,94 @@ class ChartInterpretationView(APIView):
         return Response({
             "content": interp.content,
             "created_at": interp.created_at,
+        }, status=201)
+
+
+class SynastryInterpretationView(APIView):
+    """合盤 AI 解說：綁在配對成功的聊天室上，一對配對只生成一次，雙方共用快取。
+
+    POST = 假門的「解鎖」點擊（限時免費階段點擊即生成）；
+    is_ai_unlocked / ai_unlocked_at 記錄點擊，之後分析付費意願用。
+    """
+    permission_classes = [IsAuthenticated]
+
+    def _get_room_and_score(self, request, room_id):
+        try:
+            room = ChatRoom.objects.get(id=room_id)
+        except ChatRoom.DoesNotExist:
+            return None, None, Response({"detail": "聊天室不存在"}, status=404)
+        if request.user != room.user1 and request.user != room.user2:
+            return None, None, Response({"detail": "你無權查看這個聊天室"}, status=403)
+
+        # 標準列：跟 ChatRoom 一樣用 user1(小 id)/user2(大 id) 的順序，避免雙向兩列各存一份
+        match_score, _ = MatchScore.objects.get_or_create(
+            user_a=room.user1, user_b=room.user2, defaults={'score': 0},
+        )
+        return room, match_score, None
+
+    def get(self, request, room_id):
+        room, ms, err = self._get_room_and_score(request, room_id)
+        if err:
+            return err
+        if not ms.ai_interpretation:
+            return Response({"detail": "尚未生成合盤解說"}, status=404)
+        return Response({
+            "content": ms.ai_interpretation,
+            "created_at": ms.ai_generated_at,
+        })
+
+    def post(self, request, room_id):
+        from django.utils import timezone as _tz
+        from astrology.service.interpretation_service import generate_synastry_interpretation
+        from matching.service.aspect_matching import calculate_match_score
+
+        room, ms, err = self._get_room_and_score(request, room_id)
+        if err:
+            return err
+
+        # 已有快取直接回傳（另一方點過就直接看）
+        if ms.ai_interpretation:
+            return Response({
+                "content": ms.ai_interpretation,
+                "created_at": ms.ai_generated_at,
+            })
+
+        # 記錄假門點擊（就算後面生成失敗，點擊本身就是付費意願數據）
+        if not ms.is_ai_unlocked:
+            ms.is_ai_unlocked = True
+            ms.ai_unlocked_at = _tz.now()
+            ms.save(update_fields=['is_ai_unlocked', 'ai_unlocked_at'])
+
+        profile_a = room.user1.profile
+        profile_b = room.user2.profile
+        if not PlanetPosition.objects.filter(user_profile=profile_a).exists() \
+                or not PlanetPosition.objects.filter(user_profile=profile_b).exists():
+            return Response({"detail": "雙方星盤資料不完整，無法生成合盤"}, status=400)
+
+        # 標準列可能是反向補的空列（score=0 無相位），現算補上
+        if not ms.matched_aspects:
+            score, aspects = calculate_match_score(profile_a, profile_b)
+            ms.score = score
+            ms.matched_aspects = aspects
+            ms.save(update_fields=['score', 'matched_aspects'])
+
+        if _daily_ai_cap_reached():
+            return Response({"detail": "今日 AI 解說名額已滿，請明天再來"}, status=429)
+
+        try:
+            content, model_used = generate_synastry_interpretation(
+                profile_a, profile_b, ms.matched_aspects, ms.score,
+            )
+        except Exception as e:
+            return Response({"detail": f"合盤生成失敗，請稍後再試（{type(e).__name__}）"}, status=503)
+
+        ms.ai_interpretation = content
+        ms.ai_model_used = model_used
+        ms.ai_generated_at = _tz.now()
+        ms.save(update_fields=['ai_interpretation', 'ai_model_used', 'ai_generated_at'])
+        return Response({
+            "content": ms.ai_interpretation,
+            "created_at": ms.ai_generated_at,
         }, status=201)
 
 
