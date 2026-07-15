@@ -56,7 +56,7 @@ def test_register_with_unverified_email_should_fail():
 @pytest.mark.django_db
 def test_request_email_code_success():
     client = APIClient()
-    url = "/api/v1/request-email-code/"
+    url = "/api/v1/request-verification-code/"
     data = {"email": "test@example.com"}
 
     response = client.post(url, data)
@@ -68,7 +68,7 @@ def test_request_email_code_success():
 @pytest.mark.django_db
 def test_request_email_code_too_soon():
     client = APIClient()
-    url = "/api/v1/request-email-code/"
+    url = "/api/v1/request-verification-code/"
     email = "test@example.com"
 
     # 先創建一筆剛發送的驗證碼（60秒內）
@@ -88,7 +88,7 @@ def test_request_email_code_too_soon():
 @pytest.mark.django_db
 def test_request_email_code_no_email():
     client = APIClient()
-    url = "/api/v1/request-email-code/"
+    url = "/api/v1/request-verification-code/"
     data = {}  # 沒有 email
 
     response = client.post(url, data)

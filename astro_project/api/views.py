@@ -285,10 +285,12 @@ class ChatRoomListView(APIView):
 
         for room in rooms:
             other_user = room.user2 if room.user1 == user else room.user1
+            last_message = room.messages.last()
             data.append({
                 "room_id": room.id,
                 "matched_user": SimpleUserProfileSerializer(other_user.profile).data,
-                "last_message_time": room.messages.last().timestamp if room.messages.exists() else None
+                "last_message": last_message.content if last_message else None,
+                "last_message_time": last_message.timestamp if last_message else None,
             })
 
         return Response(data)
