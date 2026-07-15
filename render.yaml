@@ -7,6 +7,7 @@ services:
     name: souler-api
     runtime: python
     plan: free
+    region: singapore  # 必須與 Neon DB 同區，否則每個查詢都跨太平洋往返
     buildCommand: pip install -r requirements.txt && cd astro_project && python manage.py collectstatic --noinput
     startCommand: cd astro_project && python manage.py migrate && daphne -b 0.0.0.0 -p $PORT astro_project.asgi:application
     healthCheckPath: /api/v1/cities/
@@ -34,6 +35,7 @@ services:
   - type: keyvalue
     name: souler-redis
     plan: free
+    region: singapore
     maxmemoryPolicy: allkeys-lru
     ipAllowList: []
 

@@ -1,4 +1,6 @@
 import random
+from asgiref.sync import async_to_sync
+from channels.layers import get_channel_layer
 from django.core.mail import send_mail
 from rest_framework.views import APIView
 from rest_framework.response import Response
@@ -339,6 +341,21 @@ class ChatRoomMessageView(APIView):
             sender=user,
             content=content
         )
+
+        # 廣播給聊天室雙方的 WebSocket（發送走 REST 保證不掉，接收走 WS 即時）
+        channel_layer = get_channel_layer()
+        async_to_sync(channel_layer.group_send)(
+            f'chat_{room.id}',
+            {
+                'type': 'chat_message',
+                'id': message.id,
+                'sender': user.id,
+                'sender_nickname': user.profile.nickname,
+                'content': message.content,
+                'timestamp': message.timestamp.isoformat(),
+            },
+        )
+
         serializer = MessageSerializer(message)
         return Response(serializer.data, status=status.HTTP_201_CREATED)
     
