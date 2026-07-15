@@ -56,6 +56,9 @@ def generate_interpretation(user_profile):
     response = client.messages.create(
         model=AI_MODEL,
         max_tokens=4096,
+        # 明確關閉思考模式：sonnet-5 預設開啟 adaptive thinking，會吃掉輸出預算；
+        # 這是創意寫作不是推理任務，關閉後更快也更省
+        thinking={'type': 'disabled'},
         system=SYSTEM_PROMPT,
         messages=[{
             'role': 'user',

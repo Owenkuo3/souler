@@ -256,6 +256,16 @@ class ChartInterpretationView(APIView):
         if not PlanetPosition.objects.filter(user_profile=profile).exists():
             return Response({"detail": "請先填寫出生資料產生星盤"}, status=400)
 
+        # 全域斷路器：每日生成上限，防止被批量假帳號惡意消耗 AI 額度
+        import os as _os
+        from django.utils import timezone as _tz
+        daily_cap = int(_os.environ.get('DAILY_INTERPRETATION_CAP', '100'))
+        today_count = ChartInterpretation.objects.filter(
+            created_at__date=_tz.now().date()
+        ).count()
+        if today_count >= daily_cap:
+            return Response({"detail": "今日 AI 解說名額已滿，請明天再來"}, status=429)
+
         try:
             content, model_used = generate_interpretation(profile)
         except Exception as e:
