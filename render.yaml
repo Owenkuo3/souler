@@ -1,0 +1,36 @@
+# Render 部署藍圖：在 Render Dashboard 選 New → Blueprint，指向這個 repo 即可
+# 需要手動設定的環境變數（在 Render Dashboard 上填）：
+#   DATABASE_URL   — Neon/Supabase 的 PostgreSQL 連線字串
+#   （選填）EMAIL_HOST / EMAIL_HOST_USER / EMAIL_HOST_PASSWORD — SMTP 寄信服務
+services:
+  - type: web
+    name: souler-api
+    runtime: python
+    plan: free
+    buildCommand: pip install -r requirements.txt && cd astro_project && python manage.py collectstatic --noinput
+    startCommand: cd astro_project && python manage.py migrate && daphne -b 0.0.0.0 -p $PORT astro_project.asgi:application
+    healthCheckPath: /api/v1/cities/
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.11.9
+      - key: SECRET_KEY
+        generateValue: true
+      - key: DEBUG
+        value: "False"
+      - key: ALLOWED_HOSTS
+        value: souler-api.onrender.com
+      - key: CSRF_TRUSTED_ORIGINS
+        value: https://souler-api.onrender.com
+      - key: DATABASE_URL
+        sync: false
+      - key: REDIS_URL
+        fromService:
+          type: keyvalue
+          name: souler-redis
+          property: connectionString
+
+  - type: keyvalue
+    name: souler-redis
+    plan: free
+    maxmemoryPolicy: allkeys-lru
+    ipAllowList: []

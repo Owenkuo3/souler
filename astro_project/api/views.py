@@ -1,4 +1,5 @@
 import random
+from django.core.mail import send_mail
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
@@ -57,7 +58,13 @@ class RequestEmailVerificationCodeView(APIView):
         code = f"{random.randint(100000, 999999)}"
         EmailVerificationCode.objects.create(email=email, code=code)
 
-        print(f"寄送驗證碼到 {email}：{code}")
+        send_mail(
+            subject='Souler 註冊驗證碼',
+            message=f'你的驗證碼是：{code}（15 分鐘內有效）',
+            from_email=None,  # 使用 settings.DEFAULT_FROM_EMAIL
+            recipient_list=[email],
+            fail_silently=False,
+        )
         return Response({'message': '驗證碼已發送'}, status=200)
 
 #email驗證

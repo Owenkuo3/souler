@@ -23,13 +23,29 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/5.2/howto/deployment/checklist/
 
-# SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = 'django-insecure-c=g=#lm!$!$*2u5z8xafsmn=_u3nd4v9w6$#6+d=frxg-!cw3x'
+# 機密與環境設定一律從環境變數讀取；沒設定時退回開發用預設值
+SECRET_KEY = os.environ.get(
+    'SECRET_KEY',
+    'django-insecure-dev-only-c=g=#lm2u5z8xafsmn_u3nd4v9w6',  # 僅限本機開發
+)
 
-# SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+DEBUG = os.environ.get('DEBUG', 'True').lower() in ('true', '1', 'yes')
 
-ALLOWED_HOSTS = ["*"]
+ALLOWED_HOSTS = os.environ.get('ALLOWED_HOSTS', '*').split(',')
+
+# HTTPS 反向代理（Render 等平台）後方需要這行才能正確判斷 https
+SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
+
+if not DEBUG:
+    # session/CSRF cookie 只在 https 傳輸（admin 用）。
+    # 不設 SECURE_SSL_REDIRECT：Render 邊緣已強制 https，設了反而會讓健康檢查失敗
+    SESSION_COOKIE_SECURE = True
+    CSRF_COOKIE_SECURE = True
+
+# Django admin 在 https 網域下需要信任來源才能通過 CSRF
+CSRF_TRUSTED_ORIGINS = [
+    o for o in os.environ.get('CSRF_TRUSTED_ORIGINS', '').split(',') if o
+]
 
 REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': (
@@ -92,11 +108,14 @@ WSGI_APPLICATION = 'astro_project.wsgi.application'
 # Database
 # https://docs.djangoproject.com/en/5.2/ref/settings/#databases
 
+# 有設 DATABASE_URL（雲端 PostgreSQL）就用它，否則本機開發用 sqlite
+import dj_database_url
+
 DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': BASE_DIR / 'db.sqlite3',
-    }
+    'default': dj_database_url.config(
+        default=f'sqlite:///{BASE_DIR / "db.sqlite3"}',
+        conn_max_age=600,
+    )
 }
 
 
@@ -157,8 +176,18 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 # 開發用：允許所有來源（Flutter Web 在瀏覽器跑會有跨域限制）。上線前要改成白名單。
 CORS_ALLOW_ALL_ORIGINS = DEBUG
 
-EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
-EMAIL_HOST_USER = 'noreply@yourapp.com'  # 顯示寄件人
+# 有設 EMAIL_HOST（SMTP 服務，如 Resend/Brevo）就真的寄信，否則印在 console
+if os.environ.get('EMAIL_HOST'):
+    EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
+    EMAIL_HOST = os.environ['EMAIL_HOST']
+    EMAIL_PORT = int(os.environ.get('EMAIL_PORT', 587))
+    EMAIL_USE_TLS = True
+    EMAIL_HOST_USER = os.environ.get('EMAIL_HOST_USER', '')
+    EMAIL_HOST_PASSWORD = os.environ.get('EMAIL_HOST_PASSWORD', '')
+    DEFAULT_FROM_EMAIL = os.environ.get('DEFAULT_FROM_EMAIL', EMAIL_HOST_USER)
+else:
+    EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
+    DEFAULT_FROM_EMAIL = 'noreply@souler.app'
 
 AUTH_USER_MODEL = 'accounts.CustomUser'
 
@@ -174,11 +203,18 @@ SIMPLE_JWT = {
 
 ASGI_APPLICATION = 'astro_project.asgi.application'
 
-# 有設 REDIS_HOST 環境變數（Docker / 正式環境）才用 Redis，
-# 本機開發不裝 Redis 也能跑，WebSocket 廣播改用單進程的 InMemory layer
+# Redis 連線優先序：REDIS_URL（雲端）> REDIS_HOST（docker-compose）> InMemory（本機開發）
+REDIS_URL = os.environ.get("REDIS_URL")
 REDIS_HOST = os.environ.get("REDIS_HOST")
 
-if REDIS_HOST:
+if REDIS_URL:
+    CHANNEL_LAYERS = {
+        "default": {
+            "BACKEND": "channels_redis.core.RedisChannelLayer",
+            "CONFIG": {"hosts": [REDIS_URL]},
+        },
+    }
+elif REDIS_HOST:
     CHANNEL_LAYERS = {
         "default": {
             "BACKEND": "channels_redis.core.RedisChannelLayer",
