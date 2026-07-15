@@ -328,11 +328,13 @@ class ChatRoomListView(APIView):
         for room in rooms:
             other_user = room.user2 if room.user1 == user else room.user1
             last_message = room.messages.last()
+            unread = room.messages.filter(is_read=False).exclude(sender=user).count()
             data.append({
                 "room_id": room.id,
                 "matched_user": SimpleUserProfileSerializer(other_user.profile).data,
                 "last_message": last_message.content if last_message else None,
                 "last_message_time": last_message.timestamp if last_message else None,
+                "unread_count": unread,
             })
 
         return Response(data)
@@ -392,5 +394,35 @@ class ChatRoomMessageView(APIView):
         serializer = MessageSerializer(message)
         return Response(serializer.data, status=status.HTTP_201_CREATED)
     
+class ChatRoomReadView(APIView):
+    """把聊天室內「對方傳來」的訊息全部標為已讀，並廣播已讀事件給對方。"""
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request, room_id):
+        user = request.user
+        try:
+            room = ChatRoom.objects.get(id=room_id)
+        except ChatRoom.DoesNotExist:
+            return Response({"detail": "聊天室不存在"}, status=404)
+
+        if user != room.user1 and user != room.user2:
+            return Response({"detail": "你無權操作這個聊天室"}, status=403)
+
+        updated = (
+            room.messages.filter(is_read=False)
+            .exclude(sender=user)
+            .update(is_read=True)
+        )
+
+        if updated:
+            channel_layer = get_channel_layer()
+            async_to_sync(channel_layer.group_send)(
+                f'chat_{room.id}',
+                {'type': 'read_event', 'reader': user.id},
+            )
+
+        return Response({"marked_read": updated})
+
+
 class MyTokenObtainPairView(TokenObtainPairView):
     serializer_class = MyTokenObtainPairSerializer

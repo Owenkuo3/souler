@@ -73,3 +73,10 @@ class ChatConsumer(AsyncWebsocketConsumer):
             'content': event['content'],
             'timestamp': event['timestamp'],
         }))
+
+    async def read_event(self, event):
+        # 對方把訊息標為已讀 → 通知發送者更新「已讀」顯示
+        await self.send(text_data=json.dumps({
+            'type': 'read',
+            'reader': event['reader'],
+        }))

@@ -147,7 +147,7 @@ class MessageSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Message
-        fields = ['id', 'sender', 'content', 'timestamp']
+        fields = ['id', 'sender', 'content', 'timestamp', 'is_read']
 
 
 class MyTokenObtainPairSerializer(TokenObtainPairSerializer):

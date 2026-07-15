@@ -1,7 +1,7 @@
 from django.urls import path
 from .views import RegisterAPIView, VerifyEmailCodeAPIView, RequestEmailVerificationCodeView, UserProfileView, UserBirthInfoView, NatalChartView, MatchCandidatesView, MatchActionView, CityListView
 from rest_framework_simplejwt.views import TokenRefreshView
-from .views import ChatRoomListView, ChatRoomMessageView, MyTokenObtainPairView
+from .views import ChatRoomListView, ChatRoomMessageView, ChatRoomReadView, MyTokenObtainPairView
 
 urlpatterns = [
     path('register/', RegisterAPIView.as_view(), name='register'),
@@ -17,5 +17,6 @@ urlpatterns = [
     path('match/action/', MatchActionView.as_view(), name='match-action'),
     path("chatrooms/", ChatRoomListView.as_view(), name="chatroom-list"),
     path("chatrooms/<int:room_id>/messages/", ChatRoomMessageView.as_view(), name="chatroom-messages"),
+    path("chatrooms/<int:room_id>/read/", ChatRoomReadView.as_view(), name="chatroom-read"),
 
 ]
