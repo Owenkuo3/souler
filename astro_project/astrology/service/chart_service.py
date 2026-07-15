@@ -1,6 +1,6 @@
 # astrology/service/chart_service.py
 
-from astrology.models import PlanetPosition
+from astrology.models import ChartInterpretation, PlanetPosition
 from users.utils import calculate_full_chart
 
 def generate_chart_and_save(user_profile, birth_info):
@@ -21,8 +21,9 @@ def generate_chart_and_save(user_profile, birth_info):
         year, month, day, hour, minute, latitude, longitude
     )
     
-    # 刪除舊的 PlanetPosition 資料
+    # 刪除舊的 PlanetPosition 資料；星盤變了，舊的 AI 解說也一併失效
     PlanetPosition.objects.filter(user_profile=user_profile).delete()
+    ChartInterpretation.objects.filter(user_profile=user_profile).delete()
     
     # 創建新的 PlanetPosition 資料
     for planet, data in chart_data.items():

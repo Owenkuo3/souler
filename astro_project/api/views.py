@@ -224,6 +224,52 @@ class NatalChartView(APIView):
 
         return Response({'planets': serializer.data, 'house_cusps': cusps})
     
+#AI 星盤解說（免費）：GET 取得既有解說，POST 生成
+class ChartInterpretationView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        from astrology.models import ChartInterpretation
+
+        interp = getattr(request.user.profile, 'chart_interpretation', None)
+        if not interp:
+            return Response({"detail": "尚未生成解說"}, status=404)
+        return Response({
+            "content": interp.content,
+            "created_at": interp.created_at,
+        })
+
+    def post(self, request):
+        from astrology.models import ChartInterpretation
+        from astrology.service.interpretation_service import generate_interpretation
+
+        profile = request.user.profile
+
+        # 已有快取直接回傳（星盤沒變就不重新生成）
+        existing = getattr(profile, 'chart_interpretation', None)
+        if existing:
+            return Response({
+                "content": existing.content,
+                "created_at": existing.created_at,
+            })
+
+        if not PlanetPosition.objects.filter(user_profile=profile).exists():
+            return Response({"detail": "請先填寫出生資料產生星盤"}, status=400)
+
+        try:
+            content, model_used = generate_interpretation(profile)
+        except Exception as e:
+            return Response({"detail": f"解說生成失敗，請稍後再試（{type(e).__name__}）"}, status=503)
+
+        interp = ChartInterpretation.objects.create(
+            user_profile=profile, content=content, model_used=model_used,
+        )
+        return Response({
+            "content": interp.content,
+            "created_at": interp.created_at,
+        }, status=201)
+
+
 #配對邏輯API
 class MatchCandidatesView(APIView):
     permission_classes = [IsAuthenticated]

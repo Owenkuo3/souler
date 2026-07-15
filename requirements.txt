@@ -10,5 +10,6 @@ channels_redis
 daphne>=4.0
 whitenoise
 django-cors-headers>=4.0
+anthropic>=0.40
 dj-database-url>=2.0
 psycopg2-binary>=2.9
