@@ -1,6 +1,29 @@
 # Souler 專案交接文件（Project Handoff）
 
-> 最後更新：2026-07-15（第二版：使用者 iPhone 實測回饋後的迭代）。
+> 最後更新：2026-07-16（第三版：AI 解說雙功能上線 + 寄信踩坑實錄 + 商業模式定調）。
+
+## 0-2. 本輪重點（2026-07-16）
+
+### AI 解說（兩個功能都已上線並在正式環境實測）
+- **個人星盤解說**（免費鉤子）：`ChartInterpretation` 快取、`GET/POST /natal-chart/interpretation/`、星盤頁生成按鈕。模型 `AI_MODEL` 環境變數（現用 claude-sonnet-5，**必須** `thinking={'type':'disabled'}`，否則 adaptive thinking 吃光輸出預算回空字串）。~50 秒/1700 字/NT$0.7
+- **合盤解說**（第一個試賣品）：綁聊天室 `GET/POST /chatrooms/<id>/synastry/`，標準列=ChatRoom 的 user1/user2 順序的 MatchScore；`ai_interpretation` 快取雙方共用；`is_ai_unlocked`+`ai_unlocked_at` 記錄**假門點擊**（前端顯示「限時免費（原價 NT$99）」，點擊率=台灣付費意願數據，市調查不到的缺口）；`ai_generated_at` 納入每日上限。前端：聊天室 AppBar「合盤」入口 → SynastryPage
+- 成本防線（四層）：per-user/per-pair 快取 → 出生資料修改限制 → `DAILY_INTERPRETATION_CAP`（個人+合盤共用，預設 100/天，設 0=全關）→ Anthropic 預付 $5 + auto-reload OFF
+
+### 寄信踩坑實錄（重要！別再走冤枉路）
+- **Render 免費層封鎖對外 SMTP 埠（25/465/587）**→ `OSError: Errno 101 Network is unreachable`。Gmail SMTP 方案不可行（曾誤判成功：那次是 env 未生效時 console backend 的假成功）
+- 必須走 **HTTP API（443 埠）**寄信：`api/email_utils.py` 支援 Mailjet（`MAILJET_API_KEY`+`MAILJET_SECRET_KEY`）與 Brevo（`BREVO_API_KEY`），寄件人=`DEFAULT_FROM_EMAIL`（須為服務端驗證過的地址）
+- **Brevo/Mailjet 同屬 Sinch 集團共用風控**：使用者兩邊註冊都被擋/停權（2026-07-16 申訴中）。Mailjet 曾回 401=帳號 suspended + API key 未發
+- **過渡方案（現行）**：`SKIP_EMAIL_VERIFICATION=true` 環境變數 → request-verification-code 直接建立已驗證紀錄並回 `verification_skipped`，前端跳過輸碼步驟直接設密碼。寄信開通後刪掉環境變數即恢復。**注意：此變數使用者尚未在 Render 設定，設定前朋友無法註冊**
+- 診斷利器：寄送失敗回 503 帶例外類型（`EMAIL_TIMEOUT=15` 防吊死）
+
+### 商業模式定調（市調後，詳見 MARKET_RESEARCH_2026-07.md）
+- 使用者初衷=「讓人找到同溫層」，商業模式從前提降級為選項。三階段：現在全免費衝真實使用 → 月成本有感（約 NT$1000/月，~1400 個新用戶解說量）時上輕量變現求打平 → 長起來再談正經模式
+- 假門（painted door）=在蓋收銀台之前用「原價 NT$99 限時免費」按鈕測量付費意願；查詢：`MatchScore.objects.filter(is_ai_unlocked=True).count()` ÷ 配對總數
+- 市調關鍵結論：通用 AI 占星文本已商品化（付費牆不成立）、Hinge 高意圖定位是唯一逆勢成長者（Souler 敘事應對齊「認真找對的人」）、Nebula 靠真人服務抗 AI（長期差異化選項）、台灣數據全缺（只能自己測）
+
+### 其他
+- PWA 門面：manifest/index.html 改 Souler 名稱+星空圖示（`web/icons/` PIL 生成）
+- 已知：內建瀏覽器 E2E 對這版 Flutter web build 失效（無 canvas 可截圖、語意層啟用不了）→ 驗證改走「API curl E2E + flutter test + 部署後 grep main.dart.js 特徵字串」
 
 ## 0-1. 聊天即時性收尾（2026-07-15 下午）
 - 已讀/未讀完成：`Message.is_read`、`POST /chatrooms/<id>/read/`（標已讀+廣播 read 事件）、列表 `unread_count`、前端已讀標記與未讀徽章
@@ -118,12 +141,13 @@ WebSocket 廣播格式與 REST 一致：`{id, sender, sender_nickname, content, 
 
 ## 七、還沒做的事（依優先序）
 
-1. **接寄信服務**（開放朋友測試前的唯一必要步驟）：Resend/Brevo 免費層，Render 設 EMAIL_* 環境變數即可，程式碼不用改
-2. iPhone 實測回饋修 UX（使用者主力設備是 iPhone，走網頁版 + 加入主畫面）
-3. 照片雲端儲存（Cloudinary 免費層）— 解決重新部署照片消失
-4. 推播通知（Firebase FCM）— 原路線圖第四階段項目
-5. **付費功能（產品核心變現，尚未設計）**：構想是「AI 詳細解盤」— 個人宮位/整體星盤解說 + 配對合盤解說。收費模式未定（月費制 vs 單點解鎖）。DB 已預留欄位：`MatchScore.ai_interpretation`（text）與 `is_ai_unlocked`（bool）
-6. 已知技術債：geocoding 是寫死的 27 城市座標表（`users/utils.py`）、時區寫死 UTC+8（只適用台灣出生者）、`test_profile_api.py`/`test_match_api.py` 是空檔案、WS token 走 query string（上線加固時應改）、雲端 DATABASE_URL 曾在對話中傳遞過（必要時到 Neon reset password 並更新 Render 環境變數）
+1. **開放朋友註冊（一個環境變數）**：Render souler-api 設 `SKIP_EMAIL_VERIFICATION=true`（使用者尚未設定）。寄信服務等 Mailjet/Brevo 申訴結果，或買網域走 Resend
+2. 照片雲端儲存（Cloudinary 免費層）— 解決重新部署照片消失（交友 app 的照片很關鍵）
+3. iPhone 實測回饋修 UX（使用者主力設備是 iPhone，走網頁版 + 加入主畫面）
+4. 假門成效查詢/報表（點擊率=付費意願），有數據後回頭定價
+5. 推播通知（Firebase FCM）— 原路線圖第四階段項目
+6. 金流（有付費決策後）：綠界/藍新網頁端金流（避 30% 商店抽成，Nebula 前例）
+7. 已知技術債：geocoding 是寫死的 27 城市座標表（`users/utils.py`）、時區寫死 UTC+8（只適用台灣出生者）、`test_profile_api.py`/`test_match_api.py` 是空檔案、WS token 走 query string（上線加固時應改）、雲端 DATABASE_URL 曾在對話中傳遞過（必要時到 Neon reset password 並更新 Render 環境變數）、出生資料修改後合盤快取不失效（個人解說會失效，合盤不會 — 成本考量下的已知取捨）
 
 ## 八、慣例
 
