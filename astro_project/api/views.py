@@ -60,13 +60,20 @@ class RequestEmailVerificationCodeView(APIView):
         code = f"{random.randint(100000, 999999)}"
         EmailVerificationCode.objects.create(email=email, code=code)
 
-        send_mail(
-            subject='Souler 註冊驗證碼',
-            message=f'你的驗證碼是：{code}（15 分鐘內有效）',
-            from_email=None,  # 使用 settings.DEFAULT_FROM_EMAIL
-            recipient_list=[email],
-            fail_silently=False,
-        )
+        try:
+            send_mail(
+                subject='Souler 註冊驗證碼',
+                message=f'你的驗證碼是：{code}（15 分鐘內有效）',
+                from_email=None,  # 使用 settings.DEFAULT_FROM_EMAIL
+                recipient_list=[email],
+                fail_silently=False,
+            )
+        except Exception as e:
+            # 錯誤類型放進回應，SMTP 出問題時才有線索（DEBUG 關閉時 log 看不到 traceback）
+            return Response(
+                {'error': f'驗證信寄送失敗，請稍後再試（{type(e).__name__}: {str(e)[:120]}）'},
+                status=503,
+            )
         return Response({'message': '驗證碼已發送'}, status=200)
 
 #email驗證

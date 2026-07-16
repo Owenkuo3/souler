@@ -188,6 +188,8 @@ if os.environ.get('EMAIL_HOST'):
     EMAIL_HOST_USER = os.environ.get('EMAIL_HOST_USER', '')
     EMAIL_HOST_PASSWORD = os.environ.get('EMAIL_HOST_PASSWORD', '')
     DEFAULT_FROM_EMAIL = os.environ.get('DEFAULT_FROM_EMAIL', EMAIL_HOST_USER)
+    # SMTP 連不上時 15 秒放棄，避免請求執行緒被無限吊死
+    EMAIL_TIMEOUT = int(os.environ.get('EMAIL_TIMEOUT', 15))
 else:
     EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
     DEFAULT_FROM_EMAIL = 'noreply@souler.app'
