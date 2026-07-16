@@ -167,6 +167,12 @@ STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
 MEDIA_URL = '/media/'
 MEDIA_ROOT = BASE_DIR / 'media'
 
+# 有設 CLOUDINARY_URL 就把使用者上傳的照片存到 Cloudinary（Render 免費層沒有持久碟，
+# 本機 media 每次部署都會消失）。CLOUDINARY_URL 格式：cloudinary://key:secret@cloud_name
+if os.environ.get('CLOUDINARY_URL'):
+    INSTALLED_APPS += ['cloudinary_storage', 'cloudinary']
+    DEFAULT_FILE_STORAGE = 'cloudinary_storage.storage.MediaCloudinaryStorage'
+
 
 # Default primary key field type
 # https://docs.djangoproject.com/en/5.2/ref/settings/#default-auto-field

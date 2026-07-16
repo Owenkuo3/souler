@@ -67,7 +67,10 @@ class UserProfile(models.Model):
     def __str__(self):
         return self.nickname
     def save(self, *args, **kwargs):
-        if self.photo:
+        # 只在「剛上傳的新照片」時壓縮：存過的檔名會帶 user_photos/ 前綴，沒有前綴
+        # 代表是這次請求新上傳的。避免每次存個人資料都重新壓縮＋重傳照片
+        # （照片改存雲端後這點尤其重要，否則改個暱稱都會重傳一次圖）。
+        if self.photo and not self.photo.name.startswith('user_photos/'):
             img = Image.open(self.photo)
 
             if img.mode != 'RGB':
