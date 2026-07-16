@@ -142,7 +142,7 @@ WebSocket 廣播格式與 REST 一致：`{id, sender, sender_nickname, content, 
 ## 七、還沒做的事（依優先序）
 
 1. **開放朋友註冊（一個環境變數）**：Render souler-api 設 `SKIP_EMAIL_VERIFICATION=true`（使用者尚未設定）。寄信服務等 Mailjet/Brevo 申訴結果，或買網域走 Resend
-2. 照片雲端儲存（Cloudinary 免費層）— 解決重新部署照片消失（交友 app 的照片很關鍵）
+2. ~~照片雲端儲存~~ ✅ 2026-07-16 完成：`CLOUDINARY_URL` 已設，照片存 Cloudinary（cloud: qrtqb5bg，免費 25GB/月），前端 `Env.mediaUrl()` 同時支援絕對/相對網址。已在正式環境實測上傳+讀取。注意：切換前上傳的舊照片（本機碟）已隨部署消失，使用者需重新上傳
 3. iPhone 實測回饋修 UX（使用者主力設備是 iPhone，走網頁版 + 加入主畫面）
 4. 假門成效查詢/報表（點擊率=付費意願），有數據後回頭定價
 5. 推播通知（Firebase FCM）— 原路線圖第四階段項目
