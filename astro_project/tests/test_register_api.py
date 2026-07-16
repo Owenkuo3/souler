@@ -27,7 +27,27 @@ def test_register_success():
     assert response.status_code == 201
 
 
-#未驗證email    
+#略過驗證開關：請求驗證碼直接標記通過，可直接註冊
+@pytest.mark.django_db
+def test_skip_verification_flag_allows_direct_register(monkeypatch):
+    monkeypatch.setenv("SKIP_EMAIL_VERIFICATION", "true")
+    client = APIClient()
+
+    resp = client.post("/api/v1/request-verification-code/", {"email": "skip@example.com"})
+    assert resp.status_code == 200
+    assert resp.data.get("verification_skipped") is True
+    assert EmailVerificationCode.objects.filter(email="skip@example.com", is_verified=True).exists()
+
+    resp2 = client.post("/api/v1/register/", {
+        "email": "skip@example.com",
+        "password": "StrongPass123!",
+        "password2": "StrongPass123!",
+        "nickname": "跳過驗證",
+    })
+    assert resp2.status_code == 201
+
+
+#未驗證email
 @pytest.mark.django_db
 def test_register_with_unverified_email_should_fail():
     EmailVerificationCode.objects.create(

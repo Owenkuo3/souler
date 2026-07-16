@@ -51,12 +51,24 @@ class RequestEmailVerificationCodeView(APIView):
                 status=429
             )
 
+        # 寄信服務尚未開通時的過渡開關：直接標記通過，前端跳過輸碼步驟
+        import os as _os
+        skip_verification = _os.environ.get('SKIP_EMAIL_VERIFICATION', '').lower() in ('1', 'true', 'yes')
+
         if EmailVerificationCode.objects.filter(email=email, is_verified=True).exists():
-            return Response({'message': '此 Email 已完成驗證，無需再次驗證'}, status=200)
-        
+            return Response({
+                'message': '此 Email 已完成驗證，無需再次驗證',
+                'verification_skipped': skip_verification,
+            }, status=200)
+
         EmailVerificationCode.objects.filter(email=email, is_verified=False).delete()
 
         code = f"{random.randint(100000, 999999)}"
+
+        if skip_verification:
+            EmailVerificationCode.objects.create(email=email, code=code, is_verified=True)
+            return Response({'message': '驗證已略過', 'verification_skipped': True}, status=200)
+
         EmailVerificationCode.objects.create(email=email, code=code)
 
         try:
