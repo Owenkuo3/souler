@@ -17,6 +17,24 @@ def send_verification_email(email, code):
     subject = 'Souler 註冊驗證碼'
     body = f'你的驗證碼是：{code}（15 分鐘內有效）'
 
+    # Mailjet（免費 200 封/天）：MAILJET_API_KEY + MAILJET_SECRET_KEY
+    mj_key = os.environ.get('MAILJET_API_KEY')
+    mj_secret = os.environ.get('MAILJET_SECRET_KEY')
+    if mj_key and mj_secret:
+        resp = httpx.post(
+            'https://api.mailjet.com/v3.1/send',
+            auth=(mj_key, mj_secret),
+            json={'Messages': [{
+                'From': {'Email': settings.DEFAULT_FROM_EMAIL, 'Name': 'Souler'},
+                'To': [{'Email': email}],
+                'Subject': subject,
+                'TextPart': body,
+            }]},
+            timeout=15.0,
+        )
+        resp.raise_for_status()
+        return
+
     api_key = os.environ.get('BREVO_API_KEY')
     if api_key:
         resp = httpx.post(

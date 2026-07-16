@@ -194,6 +194,10 @@ else:
     EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
     DEFAULT_FROM_EMAIL = 'noreply@souler.app'
 
+# 寄件人地址獨立於 SMTP 設定（HTTP API 寄信服務也要用，必須是服務端驗證過的地址）
+if os.environ.get('DEFAULT_FROM_EMAIL'):
+    DEFAULT_FROM_EMAIL = os.environ['DEFAULT_FROM_EMAIL']
+
 AUTH_USER_MODEL = 'accounts.CustomUser'
 
 SIMPLE_JWT = {
