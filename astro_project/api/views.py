@@ -1,7 +1,6 @@
 import random
 from asgiref.sync import async_to_sync
 from channels.layers import get_channel_layer
-from django.core.mail import send_mail
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
@@ -61,13 +60,8 @@ class RequestEmailVerificationCodeView(APIView):
         EmailVerificationCode.objects.create(email=email, code=code)
 
         try:
-            send_mail(
-                subject='Souler 註冊驗證碼',
-                message=f'你的驗證碼是：{code}（15 分鐘內有效）',
-                from_email=None,  # 使用 settings.DEFAULT_FROM_EMAIL
-                recipient_list=[email],
-                fail_silently=False,
-            )
+            from api.email_utils import send_verification_email
+            send_verification_email(email, code)
         except Exception as e:
             # 錯誤類型放進回應，SMTP 出問題時才有線索（DEBUG 關閉時 log 看不到 traceback）
             return Response(
