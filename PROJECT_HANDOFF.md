@@ -1,6 +1,45 @@
 # Souler 專案交接文件（Project Handoff）
 
-> 最後更新：2026-07-16（第三版：AI 解說雙功能上線 + 寄信踩坑實錄 + 商業模式定調）。
+> 最後更新：2026-07-16 深夜（第四版＝完整交接版：開發機即將歸還，本文件是唯一交接載體，
+> 下一個接手的 AI/人請從頭讀完本文件再動工）。
+
+## ⭐ 給接手者的最重要三件事
+
+1. **使用者（專案擁有者 Owen）的鐵律：程式可以爛，個資絕對不能外流。**任何涉及使用者資料（email、生日、照片、訊息）的改動，安全性優先於功能與速度。金鑰只進 Render 環境變數，絕不出現在程式碼、commit、對話。
+2. 使用者是程式初學者，偏好協作者主導技術決策並解釋理由；期望每段工作 commit + push（會自動部署！）+ 在正式環境實測驗證後才算完成。
+3. 商業模式已定調：初衷是「讓人找到同溫層」，現階段完全免費衝真實使用；月成本有感（~NT$1000）時才上輕量變現求打平。合盤解說的「限時免費（原價 NT$99）」按鈕是假門測試，點擊數＝台灣付費意願數據（查詢：`MatchScore.objects.filter(is_ai_unlocked=True).count()` ÷ 配對總數）。
+
+## 0-3. 開放註冊 + 推播 + 照片引導（2026-07-16 晚）
+
+### 註冊已正式開放（實測全通）
+- `SKIP_EMAIL_VERIFICATION=true` 已設在 Render → 註冊跳過驗證碼（前端自動跳到設密碼）。寄信服務開通後刪掉此變數即恢復驗證
+- 實測：跳過驗證 → 註冊 → 登入 → 出生資料 → 星盤 14 星體 12 宮全部生成
+- 注意：跳過驗證期間**忘記密碼無法救援**（沒有寄信管道），要提醒使用者記牢密碼
+
+### 註冊引導完整流程（三步）
+註冊（email+密碼）→ 出生資料（BirthInfoPage onboarding）→ **照片上傳（PhotoOnboardingPage，新）**→ 主頁。照片步驟可「稍後再說」，但配對頁會被照片引導卡擋住（後端也過濾無照片者不入卡池）— 雙向強制「至少一張照片」。
+
+### Web Push 推播（前後端已部署，待 iPhone 真機驗收）
+- **零第三方依賴**：VAPID 金鑰用 py_vapid 首次呼叫時自動生成、存 DB（`api.VapidKeyPair`，跨部署持久）
+- 後端：`GET /push/key/`（公鑰）、`POST /push/subscribe/`（存 `api.PushSubscription`，endpoint 唯一、換帳號轉移歸屬）；`api/push_utils.py` 的 `send_push_async`（背景執行緒、404/410 死訂閱自動清除）
+- 觸發點：配對成功推雙方（MatchActionView）、新訊息推對方（ChatRoomMessageView，含暱稱＋40 字預覽）
+- 前端：`web/push_sw.js`（顯示通知＋點擊開 app）、index.html 的 `soulerPushStatus/soulerPushSubscribe`、`PushService`（條件式 import：Web 用 js_interop、測試 VM 用 stub——直接 import dart:js_interop 會讓 flutter test 掛掉，踩過）、聊天列表頂部「開啟通知」橫幅（status=ready 才顯示）
+- **iOS 限制**：只有「加入主畫面」的 PWA 能推播（iOS 16.4+），權限請求必須由使用者手勢觸發。已知未驗：iPhone 真機收通知（使用者驗收中）
+- 已知取捨：對方開著聊天室時也會收到推播（v1 不做 presence 判斷）
+
+### 內容審核（設計已定案，尚未實作 — 下一個功能）
+1. 檢舉：配對卡＋聊天室加檢舉按鈕（不當照片/騷擾/假帳號）；**同一人對同一對象只能檢舉一次**（DB unique）＋**每人每天最多 10 次**
+2. 自動下架：被 **3 個不同使用者**檢舉 → 自動從卡池隱藏，等擁有者在 Django admin 裁決（恢復 or 停權）；下架先行、裁決不趕時間
+3. NSFW 掃描（Threads 引流前再做）：Google Vision SafeSearch，**每月前 1000 張免費**；設計為 **fail-open**——額度用完就跳過掃描、照常上傳、靠檢舉兜底，絕不擋使用者
+
+## 資安現況與原則（使用者最重視的部分）
+
+- 傳輸：全程 HTTPS/WSS（Render TLS）；CORS 白名單只有 souler-web；DEBUG=False；secure cookies
+- 認證：SimpleJWT；所有個資 endpoint 都有 IsAuthenticated + 資源歸屬檢查（聊天室成員、照片擁有者）
+- 金鑰紀律：ANTHROPIC_API_KEY / CLOUDINARY_URL / SECRET_KEY 全在 Render 環境變數，repo 乾淨
+- **待辦（開發機歸還前）：Neon 資料庫密碼要 rotate**——舊密碼曾出現在開發機的對話紀錄裡（Neon 控制台 reset password → 更新 Render 的 DATABASE_URL）
+- 已知弱點（可接受/待補）：WS token 走 query string（可能進伺服器 log，上線加固時改）；Cloudinary 照片是「不可猜測網址」的公開連結（unlisted，非授權存取——業界常見做法，但要知道）；SKIP_EMAIL_VERIFICATION 開著時任何人可用任意 email 註冊（朋友圈階段可接受，公開引流前要有真的驗證）
+- Gmail 應用程式密碼已 rotate 且 SMTP 路線已棄用——可到 Google 帳戶把它整個刪除
 
 ## 0-2. 本輪重點（2026-07-16）
 
@@ -145,15 +184,16 @@ WebSocket 廣播格式與 REST 一致：`{id, sender, sender_nickname, content, 
 | 本機 | e2e_owen@example.com | test123456 | 出生 2001/1/15 14:00 台北 |
 | 本機 | seed_star/seed_moon/seed_sun@test.com | test123456 | 小星/小月/小辰，候選人 |
 
-## 七、還沒做的事（依優先序）
+## 七、還沒做的事（依優先序，2026-07-16 深夜版）
 
-1. **開放朋友註冊（一個環境變數）**：Render souler-api 設 `SKIP_EMAIL_VERIFICATION=true`（使用者尚未設定）。寄信服務等 Mailjet/Brevo 申訴結果，或買網域走 Resend
-2. ~~照片雲端儲存~~ ✅ 2026-07-16 完成：`CLOUDINARY_URL` 已設，照片存 Cloudinary（cloud: qrtqb5bg，免費 25GB/月），前端 `Env.mediaUrl()` 同時支援絕對/相對網址。已在正式環境實測上傳+讀取。注意：切換前上傳的舊照片（本機碟）已隨部署消失，使用者需重新上傳
-3. iPhone 實測回饋修 UX（使用者主力設備是 iPhone，走網頁版 + 加入主畫面）
-4. 假門成效查詢/報表（點擊率=付費意願），有數據後回頭定價
-5. 推播通知（Firebase FCM）— 原路線圖第四階段項目
-6. 金流（有付費決策後）：綠界/藍新網頁端金流（避 30% 商店抽成，Nebula 前例）
-7. 已知技術債：geocoding 是寫死的 27 城市座標表（`users/utils.py`）、時區寫死 UTC+8（只適用台灣出生者）、`test_profile_api.py`/`test_match_api.py` 是空檔案、WS token 走 query string（上線加固時應改）、雲端 DATABASE_URL 曾在對話中傳遞過（必要時到 Neon reset password 並更新 Render 環境變數）、出生資料修改後合盤快取不失效（個人解說會失效，合盤不會 — 成本考量下的已知取捨）
+1. **iPhone 真機驗收推播**（使用者待辦）：移除並重新「加入主畫面」→ 聊天列表點「開啟通知」→ 允許 → 關掉 app → 用另一帳號配對/傳訊 → 應跳通知
+2. **內容審核三件套**（設計已定案，見 0-3 節）：檢舉 API + 3 票自動下架 + Django admin 裁決。Threads 引流前必須完成
+3. NSFW 照片掃描（Google Vision SafeSearch，fail-open 設計，見 0-3 節）— 審核之後、引流之前
+4. 寄信服務復活：等 Mailjet 申訴（ticket 4203989）；或買網域（~NT$300/年）走 Resend 一勞永逸（順便給 app 正式網址）。開通後刪 `SKIP_EMAIL_VERIFICATION` + 做忘記密碼功能
+5. Threads 引流（使用者計畫）：先朋友一批（同時、彼此認識）暖池子，再發文；素材用星盤/AI 解說金句，鉤子是「免費算星盤」不是「交友 app」
+6. 假門成效查詢/報表（點擊率=付費意願），有數據後回頭定價
+7. 金流（有付費決策後）：綠界/藍新網頁端金流（避 30% 商店抽成，Nebula 前例）
+8. 已知技術債：geocoding 寫死 27 城市表（`users/utils.py`）、時區寫死 UTC+8、`test_profile_api.py`/`test_match_api.py` 是空檔案、WS token 走 query string、出生資料修改後合盤快取不失效（成本考量的取捨）、UserProfile.photo 舊欄位已停用未刪、推播不判斷對方是否在線
 
 ## 八、慣例
 
