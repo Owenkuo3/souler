@@ -390,6 +390,39 @@ class SynastryInterpretationView(APIView):
         }, status=201)
 
 
+class PushKeyView(APIView):
+    """回傳 VAPID 公鑰（瀏覽器訂閱推播時要用的 applicationServerKey）。"""
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        from api.push_utils import get_vapid_keypair
+        _, public_b64 = get_vapid_keypair()
+        return Response({'public_key': public_b64})
+
+
+class PushSubscribeView(APIView):
+    """儲存瀏覽器的推播訂閱。同一個 endpoint 重複訂閱時更新歸屬。"""
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request):
+        from api.models import PushSubscription
+
+        endpoint = request.data.get('endpoint')
+        keys = request.data.get('keys') or {}
+        if not endpoint or not keys.get('p256dh') or not keys.get('auth'):
+            return Response({'detail': '訂閱資料不完整'}, status=400)
+
+        PushSubscription.objects.update_or_create(
+            endpoint=endpoint,
+            defaults={
+                'user': request.user,
+                'p256dh': keys['p256dh'],
+                'auth': keys['auth'],
+            },
+        )
+        return Response({'message': '訂閱成功'}, status=201)
+
+
 class UserPhotoView(APIView):
     """個人照片：最多 5 張，第一張當頭像。GET 列表 / POST 上傳（multipart photo 欄位）。"""
     permission_classes = [IsAuthenticated]
@@ -521,6 +554,14 @@ class MatchActionView(APIView):
                 user2=user2.user
             )
 
+        if is_matched:
+            # 推播給雙方（背景執行，失敗不影響配對流程）
+            from api.push_utils import send_push_async
+            send_push_async(to_user.user, '💜 配對成功！',
+                            f'你和 {from_user.nickname} 互相喜歡，開始聊天吧')
+            send_push_async(from_user.user, '💜 配對成功！',
+                            f'你和 {to_user.nickname} 互相喜歡，開始聊天吧')
+
         return Response({
             "detail": "操作成功",
             "matched": is_matched,
@@ -603,6 +644,12 @@ class ChatRoomMessageView(APIView):
                 'timestamp': message.timestamp.isoformat(),
             },
         )
+
+        # 推播給對方（背景執行；對方如果正開著聊天室，通知只是多餘不致命）
+        from api.push_utils import send_push_async
+        other = room.user2 if user == room.user1 else room.user1
+        preview = content if len(content) <= 40 else content[:40] + '…'
+        send_push_async(other, user.profile.nickname, preview)
 
         serializer = MessageSerializer(message)
         return Response(serializer.data, status=status.HTTP_201_CREATED)

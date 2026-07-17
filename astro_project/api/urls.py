@@ -1,7 +1,7 @@
 from django.urls import path
 from .views import RegisterAPIView, VerifyEmailCodeAPIView, RequestEmailVerificationCodeView, UserProfileView, UserBirthInfoView, NatalChartView, ChartInterpretationView, MatchCandidatesView, MatchActionView, CityListView
 from rest_framework_simplejwt.views import TokenRefreshView
-from .views import ChatRoomListView, ChatRoomMessageView, ChatRoomReadView, MyTokenObtainPairView, SynastryInterpretationView, UserPhotoView, UserPhotoDetailView
+from .views import ChatRoomListView, ChatRoomMessageView, ChatRoomReadView, MyTokenObtainPairView, SynastryInterpretationView, UserPhotoView, UserPhotoDetailView, PushKeyView, PushSubscribeView
 
 urlpatterns = [
     path('register/', RegisterAPIView.as_view(), name='register'),
@@ -11,6 +11,8 @@ urlpatterns = [
     path('token/refresh/', TokenRefreshView.as_view(), name='token_refresh'), 
     path('user/profile/', UserProfileView.as_view(), name='update_user_profile'),
     path('user/photos/', UserPhotoView.as_view(), name='user-photos'),
+    path('push/key/', PushKeyView.as_view(), name='push-key'),
+    path('push/subscribe/', PushSubscribeView.as_view(), name='push-subscribe'),
     path('user/photos/<int:photo_id>/', UserPhotoDetailView.as_view(), name='user-photo-detail'),
     path('birth-info/', UserBirthInfoView.as_view(), name='birth-info'),
     path('cities/', CityListView.as_view(), name='city-list'),
