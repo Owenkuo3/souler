@@ -83,3 +83,20 @@ class UserProfile(models.Model):
             self.photo.save(self.photo.name, ContentFile(output_io.read()), save=False)
 
         super().save(*args, **kwargs)
+
+class ProfilePhoto(models.Model):
+    """個人照片（最多 5 張，順序=上傳順序，第一張當頭像）。
+    上傳時已在 API 層壓縮成 JPEG，這裡不再處理。"""
+    MAX_PHOTOS = 5
+
+    user_profile = models.ForeignKey(
+        UserProfile, on_delete=models.CASCADE, related_name='photos'
+    )
+    image = models.ImageField(upload_to='user_photos/')
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['created_at', 'id']
+
+    def __str__(self):
+        return f'{self.user_profile.nickname} 的照片 #{self.pk}'

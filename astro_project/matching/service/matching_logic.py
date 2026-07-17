@@ -19,6 +19,9 @@ def get_matching_candidates(user, top_n=10):
     # 沒有出生資料就沒有星盤，無法計算契合度
     candidates = candidates.exclude(birth_info=None)
 
+    # 至少要有一張照片才會出現在別人的卡池（對等地，前端也要求上傳照片後才能滑卡）
+    candidates = candidates.filter(photos__isnull=False).distinct()
+
     # 排除已經 like/dislike 過的對象
     swiped_ids = MatchAction.objects.filter(from_user=my_profile).values_list('to_user_id', flat=True)
     candidates = candidates.exclude(id__in=swiped_ids)

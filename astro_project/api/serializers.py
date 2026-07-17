@@ -77,30 +77,46 @@ class UserBirthInfoSerializer(serializers.ModelSerializer):
         model = UserBirthInfo
         fields = '__all__'
 
+def compress_to_jpeg(image):
+    """把上傳的圖片壓成 1024px 內的 JPEG（省儲存空間與流量）。"""
+    img = Image.open(image)
+
+    if img.mode in ("RGBA", "P"):
+        img = img.convert("RGB")
+
+    img.thumbnail((1024, 1024))
+
+    buffer = BytesIO()
+    img.save(buffer, format='JPEG', quality=70)
+
+    new_image = ContentFile(buffer.getvalue())
+    new_image.name = f"{image.name.split('.')[0]}.jpg"
+    return new_image
+
+
+def first_photo_url(profile):
+    """頭像 = 第一張照片。本機儲存回相對路徑，Cloudinary 回完整網址。"""
+    first = profile.photos.first()
+    return first.image.url if first else None
+
+
 class UserProfileSerializer(serializers.ModelSerializer):
     birth_info = UserBirthInfoSerializer(read_only=True)
+    # photo = 第一張照片（頭像，相容舊格式）；photos = 全部照片。上傳/刪除走 /user/photos/
+    photo = serializers.SerializerMethodField()
+    photos = serializers.SerializerMethodField()
 
     class Meta:
         model = UserProfile
-        fields = ['nickname', 'bio', 'gender', 'match_gender', 'preferred_age_min', 'preferred_age_max', 'photo', 'birth_info']
+        fields = ['nickname', 'bio', 'gender', 'match_gender', 'preferred_age_min', 'preferred_age_max', 'photo', 'photos', 'birth_info']
 
-    def validate_photo(self, image):
-        img = Image.open(image)
+    def get_photo(self, obj):
+        return first_photo_url(obj)
 
-        if img.mode in ("RGBA", "P"):
-            img = img.convert("RGB")
+    def get_photos(self, obj):
+        return [{'id': p.id, 'url': p.image.url} for p in obj.photos.all()]
 
-        max_size = (1024, 1024)
-        img.thumbnail(max_size)
 
-        buffer = BytesIO()
-        img.save(buffer, format='JPEG', quality=70)
-
-        new_image = ContentFile(buffer.getvalue())
-        new_image.name = f"{image.name.split('.')[0]}.jpg"
-
-        return new_image
-        
 class UserBirthInfoCreateUpdateSerializer(serializers.ModelSerializer):
     class Meta:
         model = UserBirthInfo
@@ -137,9 +153,14 @@ class PlanetPositionSerializer(serializers.ModelSerializer):
         fields = ['planet_name', 'zodiac_sign', 'degree', 'correct_degree', 'house', 'is_retrograde']
 
 class SimpleUserProfileSerializer(serializers.ModelSerializer):
+    photo = serializers.SerializerMethodField()
+
     class Meta:
         model = UserProfile
         fields = ["nickname", "photo"]
+
+    def get_photo(self, obj):
+        return first_photo_url(obj)
 
 class MessageSerializer(serializers.ModelSerializer):
     # sender 回傳 user id（整數），與 WebSocket 廣播格式一致，前端才能判斷訊息是不是自己發的

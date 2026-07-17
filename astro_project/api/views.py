@@ -390,6 +390,51 @@ class SynastryInterpretationView(APIView):
         }, status=201)
 
 
+class UserPhotoView(APIView):
+    """個人照片：最多 5 張，第一張當頭像。GET 列表 / POST 上傳（multipart photo 欄位）。"""
+    permission_classes = [IsAuthenticated]
+    parser_classes = [MultiPartParser, FormParser]
+
+    def get(self, request):
+        from accounts.models import ProfilePhoto
+        photos = ProfilePhoto.objects.filter(user_profile=request.user.profile)
+        return Response([{'id': p.id, 'url': p.image.url} for p in photos])
+
+    def post(self, request):
+        from accounts.models import ProfilePhoto
+        from api.serializers import compress_to_jpeg
+
+        image = request.FILES.get('photo')
+        if not image:
+            return Response({'detail': '請附上照片（photo 欄位）'}, status=400)
+
+        profile = request.user.profile
+        if profile.photos.count() >= ProfilePhoto.MAX_PHOTOS:
+            return Response({'detail': f'最多只能上傳 {ProfilePhoto.MAX_PHOTOS} 張照片'}, status=400)
+
+        try:
+            compressed = compress_to_jpeg(image)
+        except Exception:
+            return Response({'detail': '無法讀取這張圖片，請換一張試試'}, status=400)
+
+        photo = ProfilePhoto.objects.create(user_profile=profile, image=compressed)
+        return Response({'id': photo.id, 'url': photo.image.url}, status=201)
+
+
+class UserPhotoDetailView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def delete(self, request, photo_id):
+        from accounts.models import ProfilePhoto
+        try:
+            photo = ProfilePhoto.objects.get(id=photo_id, user_profile=request.user.profile)
+        except ProfilePhoto.DoesNotExist:
+            return Response({'detail': '照片不存在'}, status=404)
+        photo.image.delete(save=False)  # 一併刪除儲存空間的檔案
+        photo.delete()
+        return Response(status=204)
+
+
 #配對邏輯API
 class MatchCandidatesView(APIView):
     permission_classes = [IsAuthenticated]
@@ -416,11 +461,13 @@ class MatchCandidatesView(APIView):
                 user_profile=profile, planet_name='太陽'
             ).first()
 
+            from api.serializers import first_photo_url
             data.append({
                 'user_id': profile.user.id,
                 'nickname': profile.nickname,
                 'bio': profile.bio,
-                'photo': profile.photo.url if profile.photo else None,
+                'photo': first_photo_url(profile),
+                'photos': [p.image.url for p in profile.photos.all()],
                 'age': age,
                 'sun_sign': sun.zodiac_sign if sun else None,
                 'match_score': item['score'],
