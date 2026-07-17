@@ -21,6 +21,12 @@
 - 假門（painted door）=在蓋收銀台之前用「原價 NT$99 限時免費」按鈕測量付費意願；查詢：`MatchScore.objects.filter(is_ai_unlocked=True).count()` ÷ 配對總數
 - 市調關鍵結論：通用 AI 占星文本已商品化（付費牆不成立）、Hinge 高意圖定位是唯一逆勢成長者（Souler 敘事應對齊「認真找對的人」）、Nebula 靠真人服務抗 AI（長期差異化選項）、台灣數據全缺（只能自己測）
 
+### 照片系統 v2（2026-07-16 晚，已在正式環境驗證 CRUD）
+- `ProfilePhoto`（accounts app）：每人最多 5 張、`ordering=created_at`、第一張=頭像；資料搬移 0004 把舊 `UserProfile.photo` 複製進來（舊欄位保留未刪）
+- API：`GET/POST /user/photos/`（POST multipart `photo` 欄位，`compress_to_jpeg` 壓縮，滿 5 張回 400）、`DELETE /user/photos/<id>/`（連 storage 檔案一起刪）
+- profile/候選 API 回 `photos` 列表；`photo` 欄位=第一張（相容）；候選過濾 `photos__isnull=False`（沒照片不入卡池）
+- 前端：個人頁 3 欄照片牆（新增/刪除/頭像標記）、配對卡 `_CardPhotos`（**點左右半邊切換**照片＋頂部進度條——不用水平滑動是為了避開滑卡手勢衝突）、配對頁無照片引導卡（與出生資料引導同模式）
+
 ### 其他
 - PWA 門面：manifest/index.html 改 Souler 名稱+星空圖示（`web/icons/` PIL 生成）
 - 已知：內建瀏覽器 E2E 對這版 Flutter web build 失效（無 canvas 可截圖、語意層啟用不了）→ 驗證改走「API curl E2E + flutter test + 部署後 grep main.dart.js 特徵字串」
